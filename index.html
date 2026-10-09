@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>グルメモ</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="グルメモ">
+<meta name="format-detection" content="telephone=no">
+<meta name="theme-color" content="#0B0B0C">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&display=swap">
+<style>
+/* Layout: Netflix-style — black stage, the brush logo writes itself, then 「どちらを開く？」 with two big tiles over two blurred storefront loops (izakaya left, kissa right). Single dark look by design. */
+:root{
+  --stage:#0B0B0C; --text:#F2EEE8; --dim:#9A958E; --ring:#F2EEE8;
+  --f-body:"Zen Kaku Gothic New","Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--stage);color:var(--text);font-family:var(--f-body);-webkit-tap-highlight-color:transparent;overflow:hidden}
+img,video{max-width:100%}
+[hidden]{display:none!important}
+:focus-visible{outline:2px solid var(--ring);outline-offset:3px}
+
+/* opening */
+#opening{position:fixed;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;background:var(--stage);transition:opacity .45s ease;cursor:pointer}
+#opening.out{opacity:0;pointer-events:none}
+.op-logo{position:relative;width:min(80vw,420px)}
+.op-logo .ink{display:block;width:100%;
+  -webkit-mask-image:linear-gradient(90deg,#000 33.4%,transparent 40%);mask-image:linear-gradient(90deg,#000 33.4%,transparent 40%);
+  -webkit-mask-size:300% 100%;mask-size:300% 100%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:100% 0;mask-position:100% 0;
+  filter:drop-shadow(0 0 24px rgba(255,236,210,.18))}
+.op-logo.write .ink{animation:brush .85s cubic-bezier(.55,.05,.35,1) forwards}
+@keyframes brush{to{-webkit-mask-position:0 0;mask-position:0 0}}
+
+/* choose */
+.bg{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.half{position:absolute;top:0;bottom:0;width:62%;overflow:hidden;transition:filter .35s ease,opacity .35s ease;filter:brightness(.62) saturate(1.1)}
+.half.iz{left:0;-webkit-mask-image:linear-gradient(90deg,#000 55%,transparent 100%);mask-image:linear-gradient(90deg,#000 55%,transparent 100%)}
+.half.ki{right:0;-webkit-mask-image:linear-gradient(270deg,#000 55%,transparent 100%);mask-image:linear-gradient(270deg,#000 55%,transparent 100%)}
+.half video,.half img{position:absolute;inset:-8%;width:116%;height:116%;max-width:none;object-fit:cover;filter:blur(7px)}
+.half.iz video,.half.iz img{animation:driftL 14s ease-in-out infinite alternate}
+.half.ki video,.half.ki img{animation:driftR 16s ease-in-out infinite alternate}
+@keyframes driftL{from{transform:scale(1) translate(0,0)}to{transform:scale(1.12) translate(3%,-2%)}}
+@keyframes driftR{from{transform:scale(1.1) translate(0,-2%)}to{transform:scale(1) translate(-3%,1%)}}
+.bg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,var(--stage) 0%,rgba(11,11,12,.25) 26%,rgba(11,11,12,.15) 62%,var(--stage) 100%)}
+#choose.hot-iz .half.iz,#choose.hot-ki .half.ki{filter:brightness(.95) saturate(1.2)}
+#choose.hot-iz .half.ki,#choose.hot-ki .half.iz{filter:brightness(.4) saturate(.9)}
+#choose > *:not(.bg){position:relative;z-index:1}
+#choose{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:calc(var(--sat) + 24px) 16px calc(var(--sab) + 24px);opacity:0;transition:opacity .5s ease}
+#choose.on{opacity:1}
+.mini{width:min(46vw,220px);display:block;opacity:.95}
+#choose h1{margin:0;text-shadow:0 2px 12px rgba(0,0,0,.7);font-size:clamp(20px,5.6vw,28px);font-weight:500;letter-spacing:.06em;text-wrap:balance;text-align:center}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(16px,5vw,32px);width:min(100%,520px)}
+.tile{display:flex;flex-direction:column;align-items:center;gap:12px;border:0;background:none;color:#D6D0C8;text-shadow:0 2px 10px rgba(0,0,0,.8);padding:0;cursor:pointer;font:inherit;transition:color .2s}
+.tile .art{position:relative;width:100%;aspect-ratio:1;max-width:100%;border-radius:10px;overflow:hidden;outline:3px solid transparent;outline-offset:0;transition:outline-color .2s,transform .25s ease;background:#1A1A1C center/cover}
+.tile img{position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:cover}
+.tile .art{box-shadow:0 14px 34px rgba(0,0,0,.55)}
+.tile .label{font-size:clamp(17px,4.6vw,22px);font-weight:700;letter-spacing:.16em}
+.tile .sub{font-size:12px;letter-spacing:.08em;margin-top:-8px}
+.tile:hover,.tile:focus-visible{color:var(--text)}
+.tile:hover .art,.tile:focus-visible .art{outline-color:var(--ring)}
+.tile:active .art{transform:scale(.97)}
+#choose.going .tile:not(.picked){opacity:.15;transition:opacity .25s}
+#choose.going .tile.picked .art{transform:scale(1.08);outline-color:var(--ring)}
+.foot{font-size:11px;color:#8C867F;letter-spacing:.1em}
+.tile .sub{color:#B9B3AB}
+@media (prefers-reduced-motion:reduce){
+  .op-logo .ink{-webkit-mask-position:0 0;mask-position:0 0;animation:none}
+  .tile .art,#choose,.half{transition:none}
+  .half video,.half img{animation:none}
+}
+</style>
+</head>
+<body>
+
+<div id="opening" aria-label="グルメモ" role="img">
+  <div class="op-logo" id="opLogo">
+    <img class="ink" src="splash/logo.png" alt="">
+  </div>
+</div>
+
+<main id="choose" aria-labelledby="chooseTitle">
+  <div class="bg" aria-hidden="true">
+    <div class="half iz"><video src="media/bg-izakaya.mp4" poster="media/bg-izakaya.jpg" autoplay muted loop playsinline preload="auto"></video></div>
+    <div class="half ki"><video src="media/bg-kissa.mp4" poster="media/bg-kissa.jpg" autoplay muted loop playsinline preload="auto"></video></div>
+  </div>
+  <img class="mini" src="splash/logo.png" alt="グルメモ">
+  <h1 id="chooseTitle">どちらを開く？</h1>
+  <div class="tiles">
+    <button class="tile" type="button" data-go="izakaya/">
+      <span class="art" style="background-image:url('media/izakaya.jpg')"><img src="media/izakaya.jpg" alt=""></span>
+      <span class="label">居酒屋</span>
+      <span class="sub">提灯の灯る夜に</span>
+    </button>
+    <button class="tile" type="button" data-go="kissa/">
+      <span class="art" style="background-image:url('media/kissa.jpg')"><img src="media/kissa.jpg" alt=""></span>
+      <span class="label">喫茶</span>
+      <span class="sub">珈琲とひと休み</span>
+    </button>
+  </div>
+  <p class="foot">記録は居酒屋・喫茶でそれぞれ別に保存されます</p>
+</main>
+
+<script>
+(() => {
+  const op = document.getElementById('opening'), logo = document.getElementById('opLogo'), choose = document.getElementById('choose');
+  const timers = []; const at = (ms, fn) => timers.push(setTimeout(fn, ms));
+  let shown = false;
+  const showChoose = () => {
+    if (shown) return; shown = true; timers.forEach(clearTimeout);
+    op.classList.add('out'); choose.classList.add('on');
+    setTimeout(() => op.remove(), 500);
+    choose.querySelectorAll('video').forEach(v => v.play().catch(() => {}));
+  };
+  // coming back from 居酒屋/喫茶 with 「切替」 skips the logo
+  if (location.hash === '#select' || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (location.hash === '#select') { op.remove(); shown = true; choose.classList.add('on'); }
+    else { logo.classList.add('write'); at(900, showChoose); }
+  } else {
+    op.addEventListener('click', showChoose);
+    at(150, () => logo.classList.add('write'));     // brush writes グルメモ (0.85s)
+    at(1650, showChoose);                           // hold a beat, then the choice screen
+  }
+  // light up the side you're about to tap
+  const hot = (t, on) => { choose.classList.toggle(t.dataset.go === 'izakaya/' ? 'hot-iz' : 'hot-ki', on); };
+  choose.querySelectorAll('.tile').forEach(t => {
+    ['pointerenter','focus','pointerdown'].forEach(ev => t.addEventListener(ev, () => hot(t, true)));
+    ['pointerleave','blur','pointercancel'].forEach(ev => t.addEventListener(ev, () => { if (!choose.classList.contains('going')) hot(t, false); }));
+  });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) choose.querySelectorAll('video').forEach(v => v.play().catch(() => {})); });
+  choose.addEventListener('click', e => {
+    const t = e.target.closest('[data-go]'); if (!t || choose.classList.contains('going')) return;
+    t.classList.add('picked'); choose.classList.add('going');
+    setTimeout(() => { location.href = t.dataset.go; }, matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 280);
+  });
+  // back/forward cache: undo the "going" state when returning
+  window.addEventListener('pageshow', () => { choose.classList.remove('going', 'hot-iz', 'hot-ki'); choose.querySelectorAll('video').forEach(v => v.play().catch(() => {})); choose.querySelectorAll('.picked').forEach(x => x.classList.remove('picked')); });
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js', {updateViaCache: 'none'}).catch(() => {}));
+  }
+})();
+</script>
+</body>
+</html>
