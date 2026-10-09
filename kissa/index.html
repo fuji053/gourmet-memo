@@ -62,6 +62,16 @@ button{cursor:pointer;-webkit-user-select:none;user-select:none}
 .hero{position:relative;margin:14px 0 18px;aspect-ratio:16/9;max-width:100%;border-radius:16px;overflow:hidden;background:#2A1F19 url("../media/bg-kissa.jpg") center/cover}
 .hero video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;max-width:none}
 .hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 45%,rgba(20,12,8,.55))}
+.hero img{position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:cover;animation:heroDrift 18s ease-in-out infinite alternate}
+@keyframes heroDrift{from{transform:scale(1) translate(0,0)}to{transform:scale(1.1) translate(-2%,-2%)}}
+@media (prefers-reduced-motion:reduce){.hero img{animation:none}}
+.hero-edit{position:absolute;top:10px;right:10px;z-index:2;display:flex;align-items:center;gap:5px;border:0;border-radius:999px;padding:7px 12px;background:rgba(20,12,8,.55);color:#F6EDE0;font-size:12px;font-weight:700;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.hero-edit svg{width:15px;height:15px}
+.pickgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.hpick{position:relative;border:2px solid transparent;border-radius:10px;padding:0;overflow:hidden;background:var(--surface);aspect-ratio:1;max-width:100%}
+.hpick img{width:100%;height:100%;object-fit:cover;display:block}
+.hpick span{position:absolute;left:0;right:0;bottom:0;padding:14px 6px 5px;font-size:11px;font-weight:700;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.7));text-align:left;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.hpick[aria-pressed="true"]{border-color:var(--yolk)}
 .hero-cap{position:absolute;left:16px;bottom:12px;z-index:1;color:#F6EDE0;font-family:var(--f-display);font-size:13px;letter-spacing:.3em;text-transform:uppercase}
 .rim{height:10px;margin:14px 0 18px;background:var(--yolk);
   -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='10'%3E%3Crect width='5' height='5'/%3E%3Crect x='5' y='5' width='5' height='5'/%3E%3Crect x='10' width='5' height='5'/%3E%3Crect x='15' y='5' width='5' height='5'/%3E%3C/svg%3E") repeat-x left center/20px 10px;
@@ -293,11 +303,13 @@ button{cursor:pointer;-webkit-user-select:none;user-select:none}
   <section id="view-all" class="view">
     <header class="top">
       <h1 class="brand"><span class="eyebrow">グルメモ</span>喫茶</h1>
-      <div class="topbtns"><a class="switch" href="../#select" aria-label="居酒屋と喫茶を切り替える"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg>切替</a><button class="gear" type="button" id="moreBtn" aria-label="設定とバックアップ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div>
+      <div class="topbtns"><a class="switch" href="../izakaya/" aria-label="居酒屋に切り替える"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg>居酒屋へ</a><button class="gear" type="button" id="moreBtn" aria-label="設定とバックアップ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div>
     </header>
-    <div class="hero" aria-hidden="true">
-      <video id="heroVid" src="../media/bg-kissa.mp4" poster="../media/bg-kissa.jpg" autoplay muted loop playsinline preload="auto"></video>
-      <div class="hero-cap"><span>Kissa &amp; Coffee</span></div>
+    <div class="hero" id="hero">
+      <video id="heroVid" src="../media/bg-kissa.mp4" poster="../media/bg-kissa.jpg" autoplay muted loop playsinline preload="auto" aria-hidden="true"></video>
+      <img id="heroImg" alt="" hidden>
+      <div class="hero-cap"><span id="heroCap">Kissa &amp; Coffee</span></div>
+      <button class="hero-edit" id="heroEdit" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/></svg>写真を変える</button>
     </div>
     <section class="stats" aria-label="記録のまとめ">
       <div class="stat"><b id="sCount">0</b><span>軒</span></div>
@@ -524,6 +536,28 @@ button{cursor:pointer;-webkit-user-select:none;user-select:none}
       <p style="margin-top:8px">勧めたい人には、このアプリのアドレスを送ってください。記録は一人ひとりのiPhoneに別々に保存されるので、自分の記録が相手に見えることはありません。</p>
     </div>
     <p id="storeWarn" class="err" hidden>保存ができない状態です。プライベートブラウズを切るか、ホーム画面のアイコンから開き直してください。</p>
+  </div>
+</div>
+
+<!-- トップの写真 sheet -->
+<div class="sheet" id="heroSheet" hidden role="dialog" aria-modal="true" aria-labelledby="heroTitle">
+  <div class="sheet-in">
+    <div class="bar">
+      <button class="iconbtn" type="button" data-close aria-label="閉じる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      <h2 id="heroTitle">トップの写真</h2><span></span>
+    </div>
+    <div class="form">
+      <div>
+        <span class="flabel">記録したお店の外観から選ぶ</span>
+        <div class="pickgrid" id="heroPicks"></div>
+        <p class="hint" id="heroNoPicks" hidden>まだ外観写真のある記録がありません。下の「カメラで撮る」も使えます。</p>
+      </div>
+      <button class="btn primary cambtn" type="button" id="heroCamBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>カメラで撮る</button>
+      <input id="heroCam" type="file" accept="image/*" capture="environment" hidden>
+      <div class="field"><label for="heroText">写真に重ねる文字</label><input id="heroText" maxlength="24" autocomplete="off" placeholder="例：純喫茶 みどり"></div>
+      <div class="actions"><button class="btn primary" type="button" id="heroSave">この写真にする</button></div>
+      <div class="photo-row"><button class="linkbtn" type="button" id="heroReset">最初の動画に戻す</button></div>
+    </div>
   </div>
 </div>
 
@@ -947,6 +981,52 @@ $('#shotCam').addEventListener('change', async e => {
   shotTarget = null;
 });
 
+/* ---------- トップの写真（好きなお店の外観にできる） ---------- */
+let hero = null, heroDraft = null;
+function applyHero(){
+  const vid = $('#heroVid'), img = $('#heroImg');
+  if (hero && hero.photo) {
+    img.src = hero.photo; img.hidden = false; vid.hidden = true; try { vid.pause(); } catch {}
+  } else {
+    img.hidden = true; img.removeAttribute('src'); vid.hidden = false; vid.play().catch(() => {});
+  }
+  $('#heroCap').textContent = (hero && hero.caption) || 'Kissa & Coffee';
+}
+function renderHeroPicks(){
+  const list = entries.filter(e => e.photo && e.photo.startsWith('data:image/jpeg'));
+  $('#heroNoPicks').hidden = list.length > 0;
+  $('#heroPicks').innerHTML = list.map(e => `<button type="button" class="hpick" data-hid="${esc(e.id)}" aria-pressed="${!!(heroDraft && heroDraft.photo === e.photo)}"><img src="${e.photo}" alt=""><span>${esc(e.shop)}</span></button>`).join('');
+}
+$('#heroEdit').addEventListener('click', () => {
+  heroDraft = hero ? {...hero} : {photo:'', caption:''};
+  $('#heroText').value = heroDraft.caption || '';
+  renderHeroPicks(); show($('#heroSheet'));
+});
+$('#heroPicks').addEventListener('click', e => {
+  const b = e.target.closest('[data-hid]'); if (!b) return;
+  const en = entries.find(x => x.id === b.dataset.hid); if (!en) return;
+  heroDraft.photo = en.photo;
+  if (!$('#heroText').value.trim()) $('#heroText').value = en.shop;
+  renderHeroPicks();
+});
+$('#heroCamBtn').addEventListener('click', () => $('#heroCam').click());
+$('#heroCam').addEventListener('change', async e => {
+  const f = e.target.files && e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  try { heroDraft.photo = await compress(f, 1400); renderHeroPicks(); toast('撮った写真を選びました。「この写真にする」で決定'); }
+  catch { toast('写真を読み込めませんでした。もう一度撮ってください'); }
+});
+$('#heroSave').addEventListener('click', async () => {
+  if (!heroDraft.photo) { toast('写真を選ぶか、カメラで撮ってください'); return; }
+  hero = {photo: heroDraft.photo, caption: $('#heroText').value.trim()};
+  try { await setMeta('hero', hero); } catch { toast('保存できませんでした'); return; }
+  applyHero(); hide($('#heroSheet')); toast('トップの写真を変えました');
+});
+$('#heroReset').addEventListener('click', async () => {
+  hero = null; try { await setMeta('hero', null); } catch {}
+  applyHero(); hide($('#heroSheet')); toast('最初の動画に戻しました');
+});
+
 /* ---------- 写真を大きく見る ---------- */
 document.addEventListener('click', e => {
   const im = e.target.closest('[data-full]'); if (!im) return;
@@ -1178,6 +1258,7 @@ renderAll();
   try { entries = await getAll('bowls'); } catch { entries = []; }
   try { wishes = await getAll('wish'); } catch { wishes = []; }
   try { const t = await getMeta('types'); if (Array.isArray(t)) types = t; } catch {}
+  try { hero = (await getMeta('hero')) || null; applyHero(); } catch {}
   try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch {}
   renderAll();
 })();

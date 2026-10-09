@@ -1,5 +1,5 @@
 // グルメモ — offline support. Bump VERSION when files change so phones pick up the update.
-const VERSION = 'gourmet-memo-v1';
+const VERSION = 'gourmet-memo-v3';
 const FONTS = VERSION + '-fonts';
 const SHELL = [
   './', './index.html', './manifest.webmanifest',
