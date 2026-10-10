@@ -1,154 +1,917 @@
 <!doctype html>
-<html lang="ja">
+<html lang="ja" data-theme="izakaya">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>グルメモ</title>
+<title>Stash</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="グルメモ">
+<meta name="apple-mobile-web-app-title" content="Stash">
 <meta name="format-detection" content="telephone=no">
+<meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#0B0B0C">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=DotGothic16&family=Shippori+Mincho+B1:wght@600;800&family=Yuji+Syuku&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="vendor/leaflet.css">
+<link rel="preload" href="fonts/stash-logo.woff2" as="font" type="font/woff2" crossorigin>
 <style>
-/* Layout: Netflix-style — black stage, the brush logo writes itself, then 「どちらを開く？」 with two big tiles over two blurred storefront loops (izakaya left, kissa right). Single dark look by design. */
+/* Layout: Netflix-style shell. Black opening + genre picker; each genre opens a one-column phone notebook (ticket cards, LED numbers) themed per genre. Theme tokens are generated in js/core.js per genre. */
 :root{
-  --stage:#0B0B0C; --text:#F2EEE8; --dim:#9A958E; --ring:#F2EEE8;
+  --bg:#F2F3F6; --surface:#FFFFFF; --ink:#1A2030; --muted:#5F6577; --line:#D8DBE4;
+  --yolk:#C8442B; --yolk-soft:#FBE3DC; --chili:#B03A2E; --led-bg:#1C2232; --led:#FFB347; --star-off:#D3D6DF; --gold:#E0A126;
+  --bar:rgba(242,243,246,.94); --f-display:"Dela Gothic One","Hiragino Sans",sans-serif; --dw:400;
+  --stage:#0B0B0C; --stage-text:#F2EEE8; --logo:#FF9A1F;
   --f-body:"Zen Kaku Gothic New","Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;
+  --f-led:"DotGothic16","Osaka-Mono",monospace;
+  --f-brush:"Yuji Syuku","Hiragino Mincho ProN","Yu Mincho",serif;
+  --r:14px; --tabbar:58px;
   --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
-  color-scheme:dark;
+  color-scheme:light;
 }
+@media (prefers-color-scheme: dark){:root{color-scheme:dark}}
 *{box-sizing:border-box}
-html,body{height:100%}
-body{margin:0;background:var(--stage);color:var(--text);font-family:var(--f-body);-webkit-tap-highlight-color:transparent;overflow:hidden}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6;-webkit-tap-highlight-color:transparent;overscroll-behavior-y:none}
+body.dark-stage{background:var(--stage)}
 img,video{max-width:100%}
 [hidden]{display:none!important}
-:focus-visible{outline:2px solid var(--ring);outline-offset:3px}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;-webkit-user-select:none;user-select:none}
+:focus-visible{outline:2px solid var(--yolk);outline-offset:2px}
 
-/* opening */
-#opening{position:fixed;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;background:var(--stage);transition:opacity .45s ease;cursor:pointer}
+/* ===== opening ===== */
+#opening{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:var(--stage);transition:opacity .45s ease;cursor:pointer}
 #opening.out{opacity:0;pointer-events:none}
-.op-logo{position:relative;width:min(80vw,420px)}
-.op-logo .ink{display:block;width:100%;
-  -webkit-mask-image:linear-gradient(90deg,#000 33.4%,transparent 40%);mask-image:linear-gradient(90deg,#000 33.4%,transparent 40%);
-  -webkit-mask-size:300% 100%;mask-size:300% 100%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:100% 0;mask-position:100% 0;
-  filter:drop-shadow(0 0 24px rgba(255,236,210,.18))}
-.op-logo.write .ink{animation:brush .85s cubic-bezier(.55,.05,.35,1) forwards}
-@keyframes brush{to{-webkit-mask-position:0 0;mask-position:0 0}}
+/* logo: Stash in Bagel Fat One (SIL OFL, subset to latin letters) */
+@font-face{font-family:"StashLogo";src:url("fonts/stash-logo.woff2") format("woff2");font-display:block}
+.wordmark{font-family:"StashLogo",var(--f-body);color:var(--logo);line-height:1;letter-spacing:.005em;white-space:nowrap}
+.op-logo{font-size:clamp(76px,26vw,140px);text-shadow:0 6px 30px rgba(255,154,31,.3)}
+.op-logo span{display:inline-block;opacity:0;transform:translateY(.35em) scale(.6)}
+.op-logo.write span{animation:pop .55s cubic-bezier(.3,1.6,.5,1) forwards}
+.op-logo.write span:nth-child(2){animation-delay:.07s}.op-logo.write span:nth-child(3){animation-delay:.14s}
+.op-logo.write span:nth-child(4){animation-delay:.21s}.op-logo.write span:nth-child(5){animation-delay:.28s}
+@keyframes pop{to{opacity:1;transform:none}}
 
-/* choose */
-.bg{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
-.half{position:absolute;top:0;bottom:0;width:62%;overflow:hidden;transition:filter .35s ease,opacity .35s ease;filter:brightness(.62) saturate(1.1)}
-.half.iz{left:0;-webkit-mask-image:linear-gradient(90deg,#000 55%,transparent 100%);mask-image:linear-gradient(90deg,#000 55%,transparent 100%)}
-.half.ki{right:0;-webkit-mask-image:linear-gradient(270deg,#000 55%,transparent 100%);mask-image:linear-gradient(270deg,#000 55%,transparent 100%)}
-.half video,.half img{position:absolute;inset:-8%;width:116%;height:116%;max-width:none;object-fit:cover;filter:blur(7px)}
-.half.iz video,.half.iz img{animation:driftL 14s ease-in-out infinite alternate}
-.half.ki video,.half.ki img{animation:driftR 16s ease-in-out infinite alternate}
-@keyframes driftL{from{transform:scale(1) translate(0,0)}to{transform:scale(1.12) translate(3%,-2%)}}
-@keyframes driftR{from{transform:scale(1.1) translate(0,-2%)}to{transform:scale(1) translate(-3%,1%)}}
-.bg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,var(--stage) 0%,rgba(11,11,12,.25) 26%,rgba(11,11,12,.15) 62%,var(--stage) 100%)}
-#choose.hot-iz .half.iz,#choose.hot-ki .half.ki{filter:brightness(.95) saturate(1.2)}
-#choose.hot-iz .half.ki,#choose.hot-ki .half.iz{filter:brightness(.4) saturate(.9)}
-#choose > *:not(.bg){position:relative;z-index:1}
-#choose{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:calc(var(--sat) + 24px) 16px calc(var(--sab) + 24px);opacity:0;transition:opacity .5s ease}
-#choose.on{opacity:1}
-.mini{width:min(46vw,220px);display:block;opacity:.95}
-#choose h1{margin:0;text-shadow:0 2px 12px rgba(0,0,0,.7);font-size:clamp(20px,5.6vw,28px);font-weight:500;letter-spacing:.06em;text-wrap:balance;text-align:center}
-.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(16px,5vw,32px);width:min(100%,520px)}
-.tile{display:flex;flex-direction:column;align-items:center;gap:12px;border:0;background:none;color:#D6D0C8;text-shadow:0 2px 10px rgba(0,0,0,.8);padding:0;cursor:pointer;font:inherit;transition:color .2s}
-.tile .art{position:relative;width:100%;aspect-ratio:1;max-width:100%;border-radius:10px;overflow:hidden;outline:3px solid transparent;outline-offset:0;transition:outline-color .2s,transform .25s ease;background:#1A1A1C center/cover}
-.tile img{position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:cover}
-.tile .art{box-shadow:0 14px 34px rgba(0,0,0,.55)}
-.tile .label{font-size:clamp(17px,4.6vw,22px);font-weight:700;letter-spacing:.16em}
-.tile .sub{font-size:12px;letter-spacing:.08em;margin-top:-8px}
-.tile:hover,.tile:focus-visible{color:var(--text)}
-.tile:hover .art,.tile:focus-visible .art{outline-color:var(--ring)}
+/* ===== genre picker ===== */
+#select{position:fixed;inset:0;z-index:40;background:var(--stage);color:var(--stage-text);overflow-y:auto;-webkit-overflow-scrolling:touch}
+.sel-bg{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.sel-bg .layer{position:absolute;inset:-8%;opacity:0;transition:opacity 1.4s ease;filter:blur(var(--bgblur,4px)) brightness(var(--bgbright,.62)) saturate(1.1)}
+.sel-bg .layer.on{opacity:1}
+.sel-bg .layer video,.sel-bg .layer img{width:100%;height:100%;max-width:none;object-fit:cover;animation:drift 16s ease-in-out infinite alternate}
+@keyframes drift{from{transform:scale(1) translate(0,0)}to{transform:scale(1.12) translate(3%,-2%)}}
+.sel-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,var(--stage) 0%,rgba(11,11,12,.3) 24%,rgba(11,11,12,.2) 62%,var(--stage) 100%)}
+.sel-in{position:relative;z-index:1;min-height:100%;display:flex;flex-direction:column;align-items:center;gap:22px;padding:calc(var(--sat) + 36px) 16px calc(var(--sab) + 32px)}
+.sel-top{width:min(100%,520px);display:flex;justify-content:flex-end;align-items:center;gap:10px}
+.sel-add{width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.25);color:var(--stage-text);display:flex;align-items:center;justify-content:center;padding:0}
+.sel-add svg{width:18px;height:18px}
+.bgprev{position:relative;aspect-ratio:9/12;width:min(60%,240px);margin:0 auto;border-radius:16px;overflow:hidden;background:#0B0B0C}
+.bgprev img,.bgprev video{position:absolute;inset:-8%;width:116%;height:116%;object-fit:cover}
+.bgprev .wm{position:absolute;left:0;right:0;top:14%;text-align:center;font-size:34px}
+.bgthumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.bgthumbs div{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden}
+.bgthumbs img{width:100%;height:100%;object-fit:cover;display:block}
+.bgthumbs button{position:absolute;top:3px;right:3px;width:24px;height:24px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:14px;line-height:1;padding:0}
+.slider{display:flex;align-items:center;gap:12px}
+.slider input{flex:1;accent-color:var(--chili)}
+.slider output{width:44px;text-align:right;font-size:13px;color:var(--muted)}
+#selTitle.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+#selTitle.hint-on{font-size:13px;color:rgba(242,238,232,.75);letter-spacing:.04em}
+.sel-edit{border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.25);color:var(--stage-text);border-radius:999px;padding:6px 14px;font-size:13px;font-weight:700}
+.mini{font-size:clamp(46px,13vw,64px);text-shadow:0 2px 16px rgba(0,0,0,.6)}
+#select h1{margin:0;font-size:clamp(20px,5.6vw,26px);font-weight:500;letter-spacing:.06em;text-align:center;text-shadow:0 2px 12px rgba(0,0,0,.7)}
+.cat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px clamp(16px,5vw,28px);width:min(100%,520px)}
+.tile{position:relative;display:flex;flex-direction:column;align-items:center;gap:10px;border:0;background:none;color:#D6D0C8;padding:0;font:inherit;text-shadow:0 2px 10px rgba(0,0,0,.8)}
+.tile .art{position:relative;width:100%;aspect-ratio:1;max-width:100%;border-radius:10px;overflow:hidden;outline:3px solid transparent;transition:outline-color .2s,transform .25s ease;background:#1A1A1C center/cover;box-shadow:0 14px 34px rgba(0,0,0,.55)}
+.tile .art img{position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:cover}
+.tile .art .ph-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--f-brush);font-size:56px;color:rgba(255,255,255,.85)}
+.tile .label{font-size:clamp(16px,4.4vw,20px);font-weight:700;letter-spacing:.14em}
+.tile .sub{font-size:12px;letter-spacing:.06em;margin-top:-8px;color:#B9B3AB}
+.tile:hover .art,.tile:focus-visible .art{outline-color:#F2EEE8}
 .tile:active .art{transform:scale(.97)}
-#choose.going .tile:not(.picked){opacity:.15;transition:opacity .25s}
-#choose.going .tile.picked .art{transform:scale(1.08);outline-color:var(--ring)}
-.foot{font-size:11px;color:#8C867F;letter-spacing:.1em}
-.tile .sub{color:#B9B3AB}
+.tile.add .art{display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.06);border:2px dashed rgba(255,255,255,.3);box-shadow:none}
+.tile.add .art span{font-size:44px;color:rgba(255,255,255,.7);line-height:1}
+.tile .tools{position:absolute;top:8px;left:8px;right:8px;display:flex;justify-content:space-between;z-index:2}
+.tile .tools span{width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px}
+#select.going .tile:not(.picked){opacity:.15;transition:opacity .25s}
+#select.going .tile.picked .art{transform:scale(1.08);outline-color:#F2EEE8}
+.sel-foot{font-size:11px;color:#8C867F;letter-spacing:.08em;text-align:center}
+
+/* ===== genre view ===== */
+.wrap{max-width:760px;margin:0 auto;padding-inline:16px;padding-top:var(--sat);padding-bottom:calc(var(--tabbar) + var(--sab) + 96px)}
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding-top:16px}
+.brand{font-family:var(--f-display);font-weight:var(--dw);font-size:30px;line-height:1.1;margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eyebrow{display:block;font-family:"StashLogo",var(--f-body);font-size:15px;color:var(--muted);letter-spacing:.02em;font-weight:400;margin-bottom:4px;line-height:1.2}
+.vtitle{font-family:var(--f-display);font-weight:var(--dw);font-size:26px;line-height:1.1;margin:0}
+.vsub{margin:6px 0 0;color:var(--muted);font-size:13px}
+.topbtns{display:flex;gap:8px;align-items:center;flex:none}
+.pill{display:flex;align-items:center;gap:4px;height:42px;padding:0 14px;border:1px solid var(--line);background:var(--surface);border-radius:999px;color:var(--ink);font-weight:700;font-size:13px;white-space:nowrap}
+.pill svg{width:18px;height:18px}
+.gear{border:1px solid var(--line);background:var(--surface);border-radius:999px;width:42px;height:42px;display:flex;align-items:center;justify-content:center;flex:none}
+.gear svg{width:21px;height:21px}
+.hero{position:relative;margin:14px 0 18px;aspect-ratio:16/9;max-width:100%;border-radius:16px;overflow:hidden;background:var(--led-bg) center/cover}
+.hero video,.hero img{position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:cover}
+.hero img{animation:drift 18s ease-in-out infinite alternate}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 45%,rgba(10,8,6,.6));pointer-events:none}
+.hero-cap{position:absolute;left:16px;right:120px;bottom:12px;z-index:1;color:#F6EDE0;font-family:var(--f-display);font-weight:var(--dw);font-size:14px;letter-spacing:.24em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hero-edit{position:absolute;top:10px;right:10px;z-index:2;display:flex;align-items:center;gap:5px;border:0;border-radius:999px;padding:7px 12px;background:rgba(20,12,8,.55);color:#F6EDE0;font-size:12px;font-weight:700;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.hero-edit svg{width:15px;height:15px}
+.hero-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--f-brush);font-size:64px;color:rgba(255,255,255,.18)}
+.install{background:var(--led-bg);color:#E9ECE5;border-radius:12px;padding:12px 14px;font-size:13px;display:flex;gap:10px;align-items:flex-start;margin-top:14px}
+.install b{color:var(--led)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--led-bg);border-radius:10px;padding:10px 6px 8px;text-align:center;min-width:0}
+.stat b{display:block;font-family:var(--f-led);font-weight:400;color:var(--led);font-size:24px;line-height:1.1;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat span{display:block;font-size:11px;color:#B9C0B7;letter-spacing:.08em;margin-top:4px}
+.tools{display:flex;gap:8px;margin-top:16px}
+.search{flex:1;min-width:0;position:relative}
+.search input{width:100%;height:44px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:0 14px 0 40px;font-size:16px;-webkit-appearance:none;appearance:none}
+.search input::-webkit-search-decoration{-webkit-appearance:none}
+.search svg{position:absolute;left:14px;top:13px;width:18px;height:18px;color:var(--muted)}
+.sort{height:44px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:0 12px;max-width:40%;font-size:16px}
+.sechead{display:flex;align-items:baseline;gap:8px;margin:22px 0 0;font-size:14px}
+.sechead b{font-family:var(--f-display);font-weight:var(--dw);font-size:18px}
+.sechead span{color:var(--muted);font-size:13px}
+.note{margin:14px 0 0;background:var(--yolk-soft);border-radius:10px;padding:10px 14px;font-size:13px}
+.empty{text-align:center;color:var(--muted);padding:36px 0;margin:0}
+.chip{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 13px;font-size:13px;font-weight:500;white-space:nowrap}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip.add{border-style:dashed;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+
+/* tags tab */
+.typebar{position:sticky;top:var(--sat);z-index:4;background:var(--bg);margin-inline:-16px;padding-inline:16px;border-bottom:1px solid var(--line)}
+.typehead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:16px}
+.ttabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;margin-inline:-16px;padding-inline:12px;margin-top:10px}
+.ttabs::-webkit-scrollbar{display:none}
+.ttab{flex:none;position:relative;border:0;background:none;padding:10px 12px 12px;font-size:15px;font-weight:700;color:var(--muted);white-space:nowrap;display:flex;align-items:center;gap:6px}
+.ttab .cnt{font-family:var(--f-led);font-weight:400;font-size:12px;background:var(--line);color:var(--ink);border-radius:999px;padding:0 7px;line-height:18px}
+.ttab[aria-selected="true"]{color:var(--ink)}
+.ttab[aria-selected="true"]::after{content:"";position:absolute;left:10px;right:10px;bottom:0;height:3px;border-radius:3px 3px 0 0;background:var(--yolk)}
+.ttab.addtab{color:var(--yolk)}
+.ttab .x{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--chili);color:#fff;font-size:12px;line-height:1}
+.ttab.armed{color:var(--chili)}
+.typesum{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;padding:12px 0 2px;color:var(--muted);font-size:13px}
+.typesum b{font-family:var(--f-display);font-weight:var(--dw);font-size:20px;color:var(--ink)}
+.addrow{display:flex;gap:8px;padding:12px 0}
+.addrow input{flex:1;min-width:0;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 12px;font-size:16px}
+.edit-hint{font-size:12px;color:var(--chili);padding:8px 0 0;margin:0}
+
+/* cards */
+.list{display:grid;grid-template-columns:1fr;gap:12px;margin-top:14px}
+@media (min-width:640px){.list{grid-template-columns:1fr 1fr}}
+.ticket{position:relative;display:grid;grid-template-columns:92px 1fr;gap:12px;align-items:stretch;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px;min-width:0}
+.ticket::after{content:"";position:absolute;right:89px;top:8px;bottom:8px;border-left:1.5px dashed var(--line)}
+.ticket .ph{width:92px;height:100%;min-height:92px;border-radius:9px;object-fit:cover;background:var(--bg);display:block}
+.tbody{display:grid;grid-template-columns:1fr 74px;gap:10px;min-width:0}
+.tmain{min-width:0;display:flex;flex-direction:column;gap:1px}
+.shop{font-weight:700;font-size:15px;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item{font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.area{display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink);overflow:hidden;white-space:nowrap;min-width:0}
+.area svg{width:13px;height:13px;flex:none;color:var(--yolk)}
+.area span{overflow:hidden;text-overflow:ellipsis}
+.meta{margin-top:auto;padding-top:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.tag{font-size:11px;border:1px solid var(--line);border-radius:4px;padding:0 5px;color:var(--ink)}
+.heart{color:var(--chili);font-size:13px}
+.stub{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center}
+.stub .yen{font-family:var(--f-led);color:var(--led);background:var(--led-bg);border-radius:6px;padding:3px 6px;font-size:15px;white-space:nowrap;max-width:100%;overflow:hidden}
+.stub .num{font-family:var(--f-display);font-weight:var(--dw);font-size:22px;line-height:1}
+.stub small{font-size:10px;color:var(--muted);letter-spacing:.1em}
+.sample-mark{position:absolute;top:-8px;left:12px;background:var(--yolk);color:#fff;font-size:10px;font-weight:700;border-radius:4px;padding:1px 7px;letter-spacing:.1em}
+.wish{position:relative;display:grid;grid-template-columns:48px 1fr auto;gap:12px;align-items:center;background:var(--surface);border:1.5px dashed var(--line);border-radius:var(--r);padding:12px;min-width:0;cursor:pointer}
+.wicon{width:48px;height:48px;border-radius:10px;background:var(--yolk-soft);color:var(--yolk);display:flex;align-items:center;justify-content:center}
+.wicon svg{width:24px;height:24px}
+.wmain{min-width:0;display:flex;flex-direction:column;gap:1px}
+.went{border:0;background:var(--yolk);color:#fff;font-weight:700;font-size:13px;border-radius:999px;padding:8px 12px;white-space:nowrap}
+.stars{position:relative;display:inline-flex;line-height:0;vertical-align:middle}
+.stars .base,.stars .fill{display:flex}
+.stars .fill{position:absolute;inset:0 auto 0 0;overflow:hidden}
+.stars svg{flex:none}
+.stars .base svg{color:var(--star-off)}
+.stars .fill svg{color:var(--gold)}
+
+/* map */
+.mapwrap{position:relative;margin-top:14px;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);height:calc(100vh - 290px);height:calc(100dvh - 290px);min-height:320px;background:var(--surface)}
+#mapBox,#locMap{position:absolute;inset:0}
+.legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.legend button{display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:700}
+.legend button[aria-pressed="false"]{opacity:.4}
+.legend i{width:12px;height:12px;border-radius:50%;display:block;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+.mapnote{font-size:12px;color:var(--muted);margin:8px 0 0}
+.gm-pin{width:24px;height:24px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.45)}
+.leaflet-popup-content{font-family:var(--f-body);font-size:14px;margin:10px 12px}
+.leaflet-popup-content b{display:block;font-size:15px}
+.leaflet-popup-content button{margin-top:6px;border:0;border-radius:999px;background:#1A2030;color:#fff;font-weight:700;padding:6px 14px;font-size:13px}
+.leaflet-container{font-family:var(--f-body);background:#EAE7E1}
+.centerpin{position:absolute;left:50%;top:50%;z-index:500;transform:translate(-50%,-100%);pointer-events:none}
+.centerpin .gm-pin{width:30px;height:30px}
+
+/* FAB + tab bar */
+.fab{position:fixed;right:16px;bottom:calc(var(--tabbar) + var(--sab) + 14px);z-index:6;display:flex;align-items:center;gap:8px;border:0;background:var(--ink);color:var(--bg);border-radius:999px;padding:14px 20px 14px 16px;font-weight:700;font-size:15px;box-shadow:0 6px 18px rgba(0,0,0,.22)}
+.fab svg{width:22px;height:22px}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:7;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--bar);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-top:1px solid var(--line);padding-bottom:var(--sab)}
+.tabbar button{height:var(--tabbar);border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10.5px;font-weight:700;color:var(--muted);white-space:nowrap;min-width:0}
+.tabbar svg{width:24px;height:24px}
+.tabbar button[aria-current="page"]{color:var(--ink)}
+.tabbar button[aria-current="page"] svg{color:var(--yolk)}
+
+/* panels / buttons */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-top:14px;font-size:14px}
+.panel h3{font-size:15px;margin:0 0 6px}
+.panel p{margin:0;color:var(--muted)}
+.panel ol{margin:8px 0 0;padding-left:1.4em;color:var(--muted)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:9px 16px;font-weight:500;font-size:14px;color:var(--ink)}
+.btn.primary{background:var(--yolk);border-color:var(--yolk);color:#fff;font-weight:700}
+.btn.danger{color:var(--chili);border-color:var(--chili)}
+.btn.danger.armed{background:var(--chili);color:#fff}
+.btn.small{padding:6px 12px;font-size:13px}
+.btn:disabled{opacity:.5}
+.linkbtn{border:0;background:none;color:var(--muted);font-size:13px;text-decoration:underline;padding:4px}
+.colors{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+.colors label{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--ink)}
+.colors input{width:52px;height:52px;border:0;border-radius:50%;padding:0;background:none;-webkit-appearance:none;appearance:none}
+.colors input::-webkit-color-swatch-wrapper{padding:0}
+.colors input::-webkit-color-swatch{border:3px solid var(--line);border-radius:50%}
+
+/* sheets */
+.sheet{position:fixed;inset:0;z-index:50;background:var(--bg);color:var(--ink);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.sheet-in{max-width:640px;margin:0 auto;padding-inline:16px;padding-top:var(--sat);padding-bottom:calc(var(--sab) + 40px)}
+.bar{position:sticky;top:0;z-index:600;display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--bg);padding:10px 0}
+.bar h2{font-family:var(--f-display);font-weight:var(--dw);font-size:19px;margin:0;text-align:center;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.iconbtn{border:0;background:transparent;padding:8px;margin-left:-8px;border-radius:999px;display:flex}
+.iconbtn svg{width:24px;height:24px}
+.form{display:flex;flex-direction:column;gap:16px;margin-top:16px}
+.field label,.flabel{display:block;font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
+.field input,.field textarea,.field select{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:11px 12px;font-size:16px}
+.field select{-webkit-appearance:none;appearance:none;min-height:46px;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px;background-repeat:no-repeat;padding-right:32px}
+.field input[type="date"]{-webkit-appearance:none;appearance:none;min-height:46px;text-align:left}
+.field input[type="date"]::-webkit-date-and-time-value{text-align:left}
+.field textarea{min-height:92px;resize:vertical}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.two>*{min-width:0}
+.yen-in{position:relative}
+.yen-in input{padding-right:34px}
+.yen-in span{position:absolute;right:12px;top:11px;color:var(--muted)}
+.req{color:var(--chili)}
+.date-hint{font-size:12px;color:var(--yolk);margin-top:4px;font-weight:500}
+.err{color:var(--chili);font-size:13px;margin-top:4px}
+.actions{display:flex;gap:10px;margin-top:4px}
+.actions .btn{flex:1;padding:13px}
+.photo-pick{position:relative;display:block;width:100%;aspect-ratio:4/3;max-width:100%;border:1.5px dashed var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden}
+.photo-pick img{width:100%;height:100%;object-fit:cover;display:block}
+.photo-pick .hint{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--muted);font-size:14px;text-align:center;padding:16px}
+.photo-pick .hint svg{width:40px;height:40px}
+.pbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.pbtns .btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:12px 8px;border-radius:12px}
+.pbtns .btn svg{width:19px;height:19px;flex:none}
+.photo-row{display:flex;justify-content:flex-end;margin-top:2px}
+.rate{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 12px 12px;text-align:center}
+.rate .stars{touch-action:none;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.rate-read{display:flex;align-items:baseline;justify-content:center;gap:8px;margin-top:6px}
+.rate-read b{font-family:var(--f-display);font-weight:var(--dw);font-size:28px;line-height:1}
+.rate-read span{font-size:13px;color:var(--muted)}
+.rate-help{font-size:11px;color:var(--muted);margin-top:4px}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px}
+.toggle input{width:22px;height:22px;accent-color:var(--chili)}
+.per-person{margin-top:-6px;font-size:13px;color:var(--muted)}
+.per-person b{font-family:var(--f-led);font-weight:400;font-size:18px;color:var(--ink)}
+.maplink{display:flex;align-items:center;justify-content:center;gap:6px;padding:11px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--yolk);font-weight:700;font-size:14px;text-decoration:none}
+.maplink svg{width:17px;height:17px;flex:none}
+.locbox{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.locbox .dot{width:12px;height:12px;border-radius:50%;flex:none;background:var(--line)}
+.locbox.on .dot{background:var(--yolk)}
+.locbox span{flex:1;font-size:14px;min-width:0}
+.locbox .btn{flex:none}
+
+/* photo grids & dish rows */
+.dish-list{display:flex;flex-direction:column;gap:8px}
+.drow{display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px}
+.dthumb{width:64px;height:64px;border-radius:9px;border:1.5px dashed var(--line);background:var(--bg);padding:0;overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.dthumb img{width:100%;height:100%;object-fit:cover;display:block}
+.dthumb svg{width:22px;height:22px}
+.dfields{min-width:0;display:flex;flex-direction:column;gap:6px}
+.dfields input{width:100%;min-width:0;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:7px 9px;font-size:16px}
+.dsub{display:flex;gap:6px;align-items:center}
+.recbtn{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:5px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+.recbtn[aria-pressed="true"]{background:var(--yolk);border-color:var(--yolk);color:#fff}
+.dmove{display:flex;flex-direction:column;gap:2px}
+.dmove button{border:0;background:none;color:var(--muted);font-size:16px;line-height:1;padding:5px 6px}
+.shots{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px}
+.shots:empty{display:none}
+.shot{position:relative;border:0;padding:0;background:none}
+.shot img{width:100%;aspect-ratio:1;max-width:100%;object-fit:cover;border-radius:8px;display:block}
+.shot .no{position:absolute;left:4px;top:4px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;font-weight:700;border-radius:999px;padding:0 6px}
+
+/* detail */
+.dphoto{width:100%;aspect-ratio:4/3;max-width:100%;object-fit:cover;border-radius:var(--r);display:block;background:var(--surface)}
+.dhead{margin-top:16px}
+.dtitle{display:flex;align-items:center;gap:10px}
+.dtitle h3{font-family:var(--f-display);font-weight:var(--dw);font-size:24px;line-height:1.25;margin:0;flex:1;min-width:0;overflow-wrap:anywhere}
+.dhead p{margin:2px 0 0;color:var(--muted)}
+.drate{display:flex;align-items:center;gap:10px;margin-top:10px}
+.drate b{font-family:var(--f-display);font-weight:var(--dw);font-size:22px}
+.dbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.dbtns .full{grid-column:1/-1}
+.dbtn{display:flex;align-items:center;justify-content:center;gap:6px;padding:11px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-weight:700;font-size:14px;text-decoration:none}
+.dbtn svg{width:18px;height:18px;flex:none}
+.dbtn.accent{background:var(--yolk);border-color:var(--yolk);color:#fff}
+.dl{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin:18px 0 0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.dl dt{font-size:12px;color:var(--muted);letter-spacing:.08em;padding-top:2px}
+.dl dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.memo{white-space:pre-wrap}
+.dactions{display:flex;gap:10px;margin-top:18px}
+.dactions .btn{flex:1;padding:12px}
+.dsec{margin-top:18px}
+.dsec h4{margin:0 0 8px;font-family:var(--f-display);font-weight:var(--dw);font-size:16px;letter-spacing:.1em;display:flex;align-items:center;gap:8px}
+.dsec h4::after{content:"";flex:1;height:1px;background:var(--line)}
+.strip{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin-inline:-16px;padding-inline:16px}
+.strip::-webkit-scrollbar{display:none}
+.strip img{flex:none;width:68%;max-width:none;aspect-ratio:4/3;object-fit:cover;border-radius:12px}
+.mood{margin:8px 0 0;font-family:var(--f-display);font-size:15px}
+.menugrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.menugrid img{width:100%;aspect-ratio:3/4;max-width:100%;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
+.hint{margin:6px 0 0;font-size:12px;color:var(--muted)}
+/* お品書き (izakaya) */
+.oshinagaki{margin-top:18px;border-radius:var(--r);padding:16px 12px 18px;background:repeating-linear-gradient(90deg,rgba(0,0,0,.06) 0 2px,transparent 2px 120px),linear-gradient(180deg,#6B4426,#5A3820 60%,#4E301B);box-shadow:inset 0 0 0 1px rgba(0,0,0,.25),inset 0 10px 24px rgba(0,0,0,.25)}
+.oshinagaki h4{margin:0 0 12px;text-align:center;font-family:var(--f-brush);font-weight:400;font-size:22px;letter-spacing:.3em;color:#F6EBD3}
+.tanzaku-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px 10px;justify-items:center}
+.tanzaku{position:relative;width:100%;max-width:120px;background:linear-gradient(180deg,#FBF4E2,#F1E5C8);color:#1E1A14;border-radius:2px;padding:8px 8px 12px;box-shadow:0 3px 8px rgba(0,0,0,.35);display:flex;flex-direction:column;align-items:center;gap:8px;transform:rotate(var(--tilt,0deg))}
+.tanzaku::before{content:"";position:absolute;top:4px;left:50%;width:7px;height:7px;margin-left:-3.5px;border-radius:50%;background:#8B1E14}
+.tanzaku .tph{width:100%;aspect-ratio:1;max-width:100%;object-fit:cover;border-radius:2px;margin-top:8px;display:block;background:#E8DCBF}
+.tanzaku .tname{writing-mode:vertical-rl;font-family:var(--f-brush);font-size:21px;line-height:1.25;letter-spacing:.06em;min-height:6.5em;max-height:9em;overflow:hidden}
+.tanzaku .tosusume{position:absolute;top:10px;right:-6px;background:#C8442B;color:#fff;font-size:11px;font-weight:700;padding:2px 6px;border-radius:3px;transform:rotate(8deg)}
+/* ショーケース (kissa) */
+.showcase{margin-top:18px;border-radius:var(--r);padding:16px 12px 6px;background:linear-gradient(180deg,#3A2A20,#2A1E17);position:relative;overflow:hidden}
+.showcase::before{content:"";position:absolute;inset:0;background:linear-gradient(115deg,rgba(255,255,255,.09) 0 18%,transparent 18% 60%,rgba(255,255,255,.05) 60% 64%,transparent 64%);pointer-events:none}
+.showcase h4{margin:0 0 12px;text-align:center;font-family:var(--f-display);font-weight:var(--dw);font-size:18px;letter-spacing:.4em;color:#E6C27A}
+.shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:4px 12px}
+.sample{position:relative;margin:0;padding:0 0 12px;border-bottom:3px solid #B8924A;display:flex;flex-direction:column;align-items:center;gap:8px}
+.sample img,.sample .noph{width:100%;aspect-ratio:1;max-width:100%;object-fit:cover;border-radius:10px;display:block;box-shadow:0 6px 14px rgba(0,0,0,.45)}
+.sample .noph{display:flex;align-items:center;justify-content:center;background:#4A372B;color:#E6C27A;font-family:var(--f-display);font-size:34px}
+.sample figcaption{background:#FBFAF7;color:#2A1F19;font-weight:700;font-size:13px;line-height:1.3;padding:4px 10px;border-radius:3px;text-align:center;max-width:100%;overflow-wrap:anywhere}
+.sample .pick{position:absolute;top:6px;left:6px;background:#1E6B4F;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+/* ギャラリー (custom genres) */
+.gallery{margin-top:18px}
+.ggrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.gcard{position:relative;margin:0;border-radius:12px;overflow:hidden;background:var(--surface);border:1px solid var(--line)}
+.gcard img,.gcard .noph{width:100%;aspect-ratio:1;max-width:100%;object-fit:cover;display:block}
+.gcard .noph{display:flex;align-items:center;justify-content:center;background:var(--yolk-soft);color:var(--yolk);font-family:var(--f-display);font-size:34px}
+.gcard figcaption{padding:6px 10px;font-weight:700;font-size:13px}
+.gcard .pick{position:absolute;top:6px;left:6px;background:var(--yolk);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+
+/* pickers in sheets */
+.tmpls{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tmpl{border:2px solid var(--line);background:var(--surface);border-radius:12px;padding:10px;text-align:left;display:flex;flex-direction:column;gap:2px}
+.tmpl b{font-size:14px}
+.tmpl span{font-size:12px;color:var(--muted);line-height:1.4}
+.tmpl[aria-pressed="true"]{border-color:var(--yolk)}
+.swatches{display:flex;flex-wrap:wrap;gap:10px}
+.swatch{width:54px;display:flex;flex-direction:column;align-items:center;gap:4px;border:0;background:none;padding:0;font-size:11px;font-weight:700;color:var(--muted)}
+.swatch i{width:44px;height:44px;border-radius:50%;display:block;border:3px solid var(--line)}
+.swatch[aria-pressed="true"] i{border-color:var(--ink)}
+.swatch[aria-pressed="true"]{color:var(--ink)}
+.hpicks{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.hpick{position:relative;border:2px solid transparent;border-radius:10px;padding:0;overflow:hidden;background:var(--surface);aspect-ratio:1;max-width:100%}
+.hpick img{width:100%;height:100%;object-fit:cover;display:block}
+.hpick span{position:absolute;left:0;right:0;bottom:0;padding:14px 6px 5px;font-size:11px;font-weight:700;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.7));text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hpick[aria-pressed="true"]{border-color:var(--yolk)}
+.swlist{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.swrow{display:flex;align-items:center;gap:12px;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:8px;text-align:left;width:100%}
+.swrow img,.swrow .ph-empty{width:52px;height:52px;border-radius:8px;object-fit:cover;flex:none;background:var(--led-bg);display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--f-brush);font-size:24px}
+.swrow b{flex:1;font-size:16px}
+.swrow.cur{border-color:var(--yolk)}
+.results{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.results button{text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 12px;font-size:14px}
+
+/* action sheet */
+.act{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
+.act-in{width:100%;max-width:520px;background:var(--bg);border-radius:18px 18px 0 0;padding:14px 16px calc(var(--sab) + 16px);display:flex;flex-direction:column;gap:8px}
+.act-in h4{margin:0 0 4px;text-align:center;font-size:13px;color:var(--muted);font-weight:700}
+.act-in button{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:13px;font-size:15px;font-weight:700;color:var(--ink)}
+.act-in button.danger{color:var(--chili)}
+.act-in button.cancel{background:none;border:0;color:var(--muted)}
+
+.viewer{position:fixed;inset:0;z-index:75;background:rgba(10,8,6,.94);display:flex;align-items:center;justify-content:center;padding:calc(var(--sat) + 16px) 8px calc(var(--sab) + 40px)}
+.viewer img{max-width:100%;max-height:100%;object-fit:contain}
+.viewer-x{position:absolute;left:0;right:0;bottom:calc(var(--sab) + 12px);text-align:center;color:rgba(255,255,255,.6);font-size:12px}
+.toast{position:fixed;left:50%;top:calc(var(--sat) + 12px);transform:translateX(-50%);z-index:80;background:var(--ink);color:var(--bg);padding:9px 18px;border-radius:999px;font-size:14px;font-weight:500;max-width:calc(100% - 32px);text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.2)}
+.linkrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.lbtn{border:0;border-radius:8px;padding:7px 11px;background:var(--c,#333);color:var(--t,#fff);font-weight:700;font-size:12.5px;line-height:1.1;letter-spacing:.02em;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.lbtn::after{content:"↗";opacity:.7;font-size:11px}
+.lbtn.tt{box-shadow:inset 3px 0 0 #25F4EE,inset -3px 0 0 #FE2C55}
+.lbtn.ig{background:linear-gradient(45deg,#F58529,#DD2A7B 55%,#8134AF)}
+.llist{display:flex;flex-direction:column;gap:6px}
+.lrow{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.lrow .lbtn{pointer-events:none}
+.lrow .lurl{flex:1;min-width:0;font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lrow button.ctl{border:0;background:none;color:var(--muted);font-size:15px;padding:4px 6px}
+.stream{margin-top:18px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.stream h4{margin:0 0 10px;font-family:var(--f-display);font-weight:var(--dw);font-size:16px;letter-spacing:.06em}
+.sgroup{margin-top:8px}
+.sgroup b{display:block;font-size:12px;color:var(--muted);letter-spacing:.08em;margin-bottom:6px}
+.prov{display:flex;flex-wrap:wrap;gap:10px}
+.prov figure{margin:0;width:56px;display:flex;flex-direction:column;align-items:center;gap:3px}
+.prov img{width:48px;height:48px;border-radius:11px;display:block;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.prov figcaption{font-size:10px;line-height:1.2;text-align:center;color:var(--muted);overflow-wrap:anywhere}
+.credit{margin-top:12px;font-size:10.5px;color:var(--muted);line-height:1.5}
+.results .cand{display:grid;grid-template-columns:52px 1fr;gap:10px;align-items:center;text-align:left;width:100%;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:8px}
+.results .cand img,.results .cand .np{width:52px;height:78px;border-radius:6px;object-fit:cover;background:var(--line);display:block}
+.results .cand b{display:block;font-size:15px}
+.results .cand span span{font-size:12px;color:var(--muted)}
+.sharecard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-top:12px}
+.sharecard .sc-b{padding:14px}
+.sharecard h3{margin:0;font-family:var(--f-display);font-weight:var(--dw);font-size:22px}
+@media (prefers-reduced-motion:no-preference){
+  .ticket,.wish{transition:transform .12s}
+  .ticket:active,.wish:active{transform:scale(.985)}
+  .sheet:not([hidden]){animation:up .22s ease-out}
+  @keyframes up{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}
+}
 @media (prefers-reduced-motion:reduce){
-  .op-logo .ink{-webkit-mask-position:0 0;mask-position:0 0;animation:none}
-  .tile .art,#choose,.half{transition:none}
-  .half video,.half img{animation:none}
+  .op-logo span{opacity:1;transform:none;animation:none}
+  .sel-bg .layer video,.sel-bg .layer img,.hero img{animation:none}
 }
 </style>
 </head>
-<body>
+<body class="dark-stage">
 
-<div id="opening" aria-label="グルメモ" role="img">
-  <div class="op-logo" id="opLogo">
-    <img class="ink" src="splash/logo.png" alt="">
+<!-- ===== opening ===== -->
+<div id="opening" aria-label="Stash" role="img">
+  <div class="op-logo wordmark" id="opLogo" aria-hidden="true"><span>S</span><span>t</span><span>a</span><span>s</span><span>h</span></div>
+</div>
+
+<!-- ===== genre picker ===== -->
+<main id="select" hidden aria-labelledby="selTitle">
+  <div class="sel-bg" id="selBg" aria-hidden="true"></div>
+  <div class="sel-in">
+    <div class="sel-top"><button class="sel-add" type="button" id="selBgBtn" aria-label="背景を変える"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg></button><button class="sel-edit" type="button" id="selEdit">編集</button><button class="sel-add" type="button" id="selAdd" aria-label="ジャンルを追加"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div>
+    <div class="mini wordmark" role="img" aria-label="Stash">Stash</div>
+    <h1 id="selTitle">どれを開く？</h1>
+    <div class="cat-grid" id="catGrid"></div>
+    <p class="sel-foot" id="selFoot">記録はジャンルごとに分かれて保存されます</p>
+  </div>
+</main>
+
+<!-- ===== genre view ===== -->
+<div id="app" hidden>
+  <div class="wrap">
+    <section id="view-all" class="view">
+      <header class="top">
+        <h1 class="brand"><span class="eyebrow">Stash</span><span id="catTitle">居酒屋</span></h1>
+        <div class="topbtns">
+          <button class="pill" type="button" id="switchBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg><span id="switchLabel">切替</span></button>
+          <button class="gear" type="button" id="moreBtn" aria-label="設定とバックアップ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+        </div>
+      </header>
+      <div class="hero" id="hero">
+        <video id="heroVid" autoplay muted loop playsinline preload="auto" aria-hidden="true" hidden></video>
+        <img id="heroImg" alt="" hidden>
+        <div class="hero-empty" id="heroEmpty" hidden></div>
+        <div class="hero-cap" id="heroCap"></div>
+        <button class="hero-edit" id="heroEdit" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/></svg>写真を変える</button>
+      </div>
+      <section class="stats" aria-label="記録のまとめ">
+        <div class="stat"><b id="sCount">0</b><span id="sUnit">軒</span></div>
+        <div class="stat"><b id="sAvg">-</b><span>平均★</span></div>
+        <div class="stat"><b id="sMonth">0</b><span>今月</span></div>
+      </section>
+      <div class="install" id="installTip" hidden>
+        <span><b>アプリとして使うには</b><br>共有ボタン（□に↑）→「ホーム画面に追加」。次からはホーム画面のアイコンから開いてください。</span>
+        <button class="linkbtn" type="button" id="installClose" style="color:#B9C0B7;margin-left:auto;flex:none">閉じる</button>
+      </div>
+      <div class="tools">
+        <div class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="q" type="search" placeholder="名前・メニュー・地域で探す" aria-label="記録と行ってみたいを検索" enterkeyhint="search">
+        </div>
+        <select id="sort" class="sort" aria-label="並び順">
+          <option value="date">新しい順</option>
+          <option value="rating">評価が高い順</option>
+          <option value="price" id="sortPrice">1人あたり安い順</option>
+          <option value="shop">名前順</option>
+        </select>
+      </div>
+      <p class="note" id="sampleNote" hidden></p>
+      <div id="searchHead" class="sechead" hidden><b id="searchHeadLabel">行った店</b><span id="searchCount"></span></div>
+      <div class="list" id="list"></div>
+      <div id="searchWish" hidden>
+        <div class="sechead"><b id="searchWishLabel">行ってみたい</b><span id="searchWishCount"></span></div>
+        <div class="list" id="searchWishList"></div>
+      </div>
+    </section>
+
+    <section id="view-again" class="view" hidden>
+      <header class="top"><div><h1 class="vtitle" id="againTitle">また行きたい</h1><p class="vsub" id="againSub"></p></div></header>
+      <div class="list" id="againList"></div>
+    </section>
+
+    <section id="view-wish" class="view" hidden>
+      <header class="top"><div><h1 class="vtitle" id="wishTitle2">行ってみたい</h1><p class="vsub" id="wishSub"></p></div></header>
+      <p class="note" id="wishSampleNote" hidden>いま表示しているのは見本です。右下のボタンから登録すると、見本は消えます。</p>
+      <div class="list" id="wishList"></div>
+    </section>
+
+    <section id="view-map" class="view" hidden>
+      <header class="top"><div><h1 class="vtitle">地図</h1><p class="vsub" id="mapSub"></p></div></header>
+      <div class="legend" id="mapLegend"></div>
+      <div class="mapwrap"><div id="mapBox"></div></div>
+      <p class="mapnote">地図：<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">地理院タイル</a>（国土地理院）にピンを追加して表示。地図の表示にはネット接続が必要です。</p>
+    </section>
+
+    <section id="view-types" class="view" hidden>
+      <div class="typebar">
+        <div class="typehead"><h1 class="vtitle" id="typesTitle">種類</h1><button class="btn small" type="button" id="typeEditBtn">編集</button></div>
+        <div class="ttabs" id="ttabs" role="tablist" aria-label="種類"></div>
+      </div>
+      <p class="edit-hint" id="editHint" hidden>消したいものをタップすると「削除する？」になります。もう一度タップで削除。記録そのものは消えず「全表示」に残ります。</p>
+      <form class="addrow" id="addTypeForm" hidden novalidate>
+        <input id="newType" maxlength="12" placeholder="新しい名前" aria-label="新しい名前" autocomplete="off">
+        <button class="btn primary" type="submit">追加</button>
+        <button class="btn" type="button" id="cancelType">やめる</button>
+      </form>
+      <div class="err" id="typeErr" hidden></div>
+      <div class="typesum" id="typeSum"></div>
+      <div class="list" id="typeList"></div>
+    </section>
+  </div>
+
+  <button class="fab" id="fab" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span id="fabLabel">来店記録</span></button>
+  <nav class="tabbar" id="tabbar" aria-label="ページの切り替え"></nav>
+</div>
+
+<!-- ===== record form ===== -->
+<div class="sheet" id="editSheet" hidden role="dialog" aria-modal="true" aria-labelledby="editTitle">
+  <div class="sheet-in">
+    <div class="bar">
+      <button class="iconbtn" type="button" data-close aria-label="閉じる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      <h2 id="editTitle">来店記録</h2>
+      <button class="btn primary" type="submit" form="editForm">保存</button>
+    </div>
+    <form id="editForm" class="form" novalidate>
+      <div>
+        <span class="flabel" id="coverLabel">外観</span>
+        <div class="photo-pick">
+          <img id="photoPrev" alt="選んだ写真" hidden>
+          <span class="hint" id="photoHint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span id="photoHintText">写真を入れると、撮った日が自動で入ります</span></span>
+        </div>
+        <div class="pbtns">
+          <button class="btn primary" type="button" id="coverCam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>カメラ</button>
+          <button class="btn" type="button" id="coverLib"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>写真フォルダ</button>
+        </div>
+        <div class="photo-row"><button class="linkbtn" type="button" id="photoClear" hidden>写真を外す</button></div>
+      </div>
+
+      <div class="field"><label for="fShop"><span id="nameLabel">店名</span> <span class="req">*</span></label><input id="fShop" autocomplete="off"><div class="err" id="shopErr" hidden>名前を入れてください</div></div>
+      <div class="field" data-need="sub"><label for="fSub" id="subLabel">監督・銘柄・作者など</label><input id="fSub" autocomplete="off"></div>
+
+      <div>
+        <span class="flabel" id="rateLbl">評価</span>
+        <div class="rate">
+          <div id="rateInput"></div>
+          <div class="rate-read"><b id="rateNum">0.0</b><span id="rateWord">星を左右になぞって評価</span></div>
+          <div class="rate-help">0.5刻み。指を滑らせて調整できます</div>
+        </div>
+      </div>
+
+      <div data-need="items">
+        <span class="flabel" id="itemsLabel">頼んだもの・おすすめ</span>
+        <div id="dishList" class="dish-list"></div>
+        <div class="pbtns">
+          <button class="btn" type="button" id="dishCam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>撮って追加</button>
+          <button class="btn" type="button" id="dishLib"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>写真からまとめて</button>
+        </div>
+        <div class="photo-row"><button class="linkbtn" type="button" id="dishPlain">写真なしで追加</button></div>
+      </div>
+
+      <div data-need="interior">
+        <span class="flabel">店内の雰囲気</span>
+        <div class="shots" id="interiorShots"></div>
+        <div class="pbtns" data-shots="interior"></div>
+        <div class="field" style="margin-top:8px"><input id="fMood" autocomplete="off" placeholder="ひとこと（例：昭和の照明、ジャズが流れている）" aria-label="店内の雰囲気のひとこと"></div>
+      </div>
+      <div data-need="menus">
+        <span class="flabel">メニュー表</span>
+        <div class="shots" id="menuShots"></div>
+        <div class="pbtns" data-shots="menu"></div>
+      </div>
+      <div data-need="gallery">
+        <span class="flabel" id="galleryLabel">写真</span>
+        <div class="shots" id="galleryShots"></div>
+        <div class="pbtns" data-shots="gallery"></div>
+      </div>
+
+      <div data-need="price">
+        <div class="two">
+          <div class="field"><label for="fTotal">合計金額</label><div class="yen-in"><input id="fTotal" type="number" inputmode="numeric" min="0" step="100" placeholder="12000"><span>円</span></div></div>
+          <div class="field"><label for="fPeople">人数</label><div class="yen-in"><input id="fPeople" type="number" inputmode="numeric" min="1" step="1" placeholder="3"><span>人</span></div></div>
+        </div>
+        <div class="per-person" id="perPerson" style="margin-top:8px">合計金額と人数を入れると、1人あたりを自動で計算します</div>
+      </div>
+      <div class="two">
+        <div class="field"><label for="fDate" id="dateLabel">来店日</label><input id="fDate" type="date"><div class="date-hint" id="dateHint" hidden></div></div>
+        <div class="field" data-need="resv"><label for="fResv">予約</label><select id="fResv"><option value="">—</option><option value="要予約">要予約</option><option value="予約なしで入れた">予約なしで入れた</option><option value="予約不可">予約できない店</option></select></div>
+        <div class="field" data-need="where"><label for="fWhere">どこで</label><input id="fWhere" autocomplete="off" placeholder="映画館・お店など"></div>
+      </div>
+      <div data-need="loc" style="display:flex;flex-direction:column;gap:12px">
+        <div class="two">
+          <div class="field"><label for="fPref">都道府県</label><select id="fPref"></select></div>
+          <div class="field"><label for="fPlace">場所・店舗</label><input id="fPlace" autocomplete="off" placeholder="例：名古屋駅店"></div>
+        </div>
+        <div class="locbox" id="fLocBox"><i class="dot"></i><span id="fLocText">地図の位置：未設定</span><button class="btn small" type="button" id="fLocBtn">地図で設定</button></div>
+        <a class="maplink" id="fMap" href="#" target="_blank" rel="noopener" hidden></a>
+      </div>
+      <label class="toggle" for="fNomi" data-need="nomi"><span><b>飲み放題あり</b></span><input id="fNomi" type="checkbox"></label>
+
+      <div>
+        <span class="flabel" id="tagsLabel">種類</span>
+        <div class="chips" id="soupPick" role="group"></div>
+        <div class="addrow" id="formTypeRow" hidden>
+          <input id="formNewType" maxlength="12" placeholder="新しい名前" aria-label="新しい名前" autocomplete="off">
+          <button class="btn primary" type="button" id="formTypeAdd">追加</button>
+        </div>
+        <div class="err" id="formTypeErr" hidden></div>
+      </div>
+
+      <label class="toggle" for="fAgain"><span><b id="againToggleLabel">また行きたい</b><br><small style="color:var(--muted)" id="againToggleSub">「また行きたい」ページに並びます</small></span><input id="fAgain" type="checkbox"></label>
+      <div class="field"><label for="fMemo">備考</label><textarea id="fMemo" placeholder="ちょっとしたメモに"></textarea></div>
+      <div class="actions"><button class="btn primary" type="submit">保存</button></div>
+    </form>
   </div>
 </div>
 
-<main id="choose" aria-labelledby="chooseTitle">
-  <div class="bg" aria-hidden="true">
-    <div class="half iz"><video src="media/bg-izakaya.mp4" poster="media/bg-izakaya.jpg" autoplay muted loop playsinline preload="auto"></video></div>
-    <div class="half ki"><video src="media/bg-kissa.mp4" poster="media/bg-kissa.jpg" autoplay muted loop playsinline preload="auto"></video></div>
+<!-- ===== wish form ===== -->
+<div class="sheet" id="wishSheet" hidden role="dialog" aria-modal="true" aria-labelledby="wishTitle">
+  <div class="sheet-in">
+    <div class="bar">
+      <button class="iconbtn" type="button" data-close aria-label="閉じる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      <h2 id="wishTitle">行ってみたい</h2>
+      <button class="btn primary" type="submit" form="wishForm">保存</button>
+    </div>
+    <form id="wishForm" class="form" novalidate>
+      <div class="field"><label for="wShop"><span id="wNameLabel">店名</span> <span class="req">*</span></label><input id="wShop" autocomplete="off"><div class="err" id="wShopErr" hidden>名前を入れてください</div></div>
+      <div data-need="loc" style="display:flex;flex-direction:column;gap:12px">
+        <div class="two">
+          <div class="field"><label for="wPref">都道府県</label><select id="wPref"></select></div>
+          <div class="field"><label for="wPlace">場所・店舗</label><input id="wPlace" autocomplete="off"></div>
+        </div>
+        <div class="locbox" id="wLocBox"><i class="dot"></i><span id="wLocText">地図の位置：未設定</span><button class="btn small" type="button" id="wLocBtn">地図で設定</button></div>
+        <a class="maplink" id="wMap" href="#" target="_blank" rel="noopener" hidden></a>
+      </div>
+      <div class="field"><label for="wMenu" id="wMenuLabel">気になるメニュー</label><input id="wMenu" autocomplete="off"></div>
+      <div id="wExtras" hidden></div>
+      <div class="field"><label for="wMemo">備考</label><textarea id="wMemo" placeholder="誰のおすすめか、営業時間、定休日など"></textarea></div>
+      <div class="actions"><button class="btn primary" type="submit">保存</button></div>
+      <div class="dactions" id="wishActions" hidden>
+        <button class="btn primary" type="button" id="wWent">行った！記録する</button>
+        <button class="btn danger" type="button" id="wDel">削除</button>
+      </div>
+    </form>
   </div>
-  <img class="mini" src="splash/logo.png" alt="グルメモ">
-  <h1 id="chooseTitle">どちらを開く？</h1>
-  <div class="tiles">
-    <button class="tile" type="button" data-go="izakaya/">
-      <span class="art" style="background-image:url('media/izakaya.jpg')"><img src="media/izakaya.jpg" alt=""></span>
-      <span class="label">居酒屋</span>
-      <span class="sub">提灯の灯る夜に</span>
-    </button>
-    <button class="tile" type="button" data-go="kissa/">
-      <span class="art" style="background-image:url('media/kissa.jpg')"><img src="media/kissa.jpg" alt=""></span>
-      <span class="label">喫茶</span>
-      <span class="sub">珈琲とひと休み</span>
-    </button>
-  </div>
-  <p class="foot">記録は居酒屋・喫茶でそれぞれ別に保存されます</p>
-</main>
+</div>
 
-<script>
-(() => {
-  const op = document.getElementById('opening'), logo = document.getElementById('opLogo'), choose = document.getElementById('choose');
-  const timers = []; const at = (ms, fn) => timers.push(setTimeout(fn, ms));
-  let shown = false;
-  const showChoose = () => {
-    if (shown) return; shown = true; timers.forEach(clearTimeout);
-    op.classList.add('out'); choose.classList.add('on');
-    setTimeout(() => op.remove(), 500);
-    choose.querySelectorAll('video').forEach(v => v.play().catch(() => {}));
-  };
-  // coming back from 居酒屋/喫茶 with 「切替」 skips the logo
-  if (location.hash === '#select' || matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    if (location.hash === '#select') { op.remove(); shown = true; choose.classList.add('on'); }
-    else { logo.classList.add('write'); at(900, showChoose); }
-  } else {
-    op.addEventListener('click', showChoose);
-    at(150, () => logo.classList.add('write'));     // brush writes グルメモ (0.85s)
-    at(1650, showChoose);                           // hold a beat, then the choice screen
-  }
-  // light up the side you're about to tap
-  const hot = (t, on) => { choose.classList.toggle(t.dataset.go === 'izakaya/' ? 'hot-iz' : 'hot-ki', on); };
-  choose.querySelectorAll('.tile').forEach(t => {
-    ['pointerenter','focus','pointerdown'].forEach(ev => t.addEventListener(ev, () => hot(t, true)));
-    ['pointerleave','blur','pointercancel'].forEach(ev => t.addEventListener(ev, () => { if (!choose.classList.contains('going')) hot(t, false); }));
-  });
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) choose.querySelectorAll('video').forEach(v => v.play().catch(() => {})); });
-  choose.addEventListener('click', e => {
-    const t = e.target.closest('[data-go]'); if (!t || choose.classList.contains('going')) return;
-    t.classList.add('picked'); choose.classList.add('going');
-    setTimeout(() => { location.href = t.dataset.go; }, matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 280);
-  });
-  // back/forward cache: undo the "going" state when returning
-  window.addEventListener('pageshow', () => { choose.classList.remove('going', 'hot-iz', 'hot-ki'); choose.querySelectorAll('video').forEach(v => v.play().catch(() => {})); choose.querySelectorAll('.picked').forEach(x => x.classList.remove('picked')); });
-  if ('serviceWorker' in navigator && location.protocol === 'https:') {
-    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js', {updateViaCache: 'none'}).catch(() => {}));
-  }
-})();
-</script>
+<!-- ===== detail ===== -->
+<div class="sheet" id="detailSheet" hidden role="dialog" aria-modal="true" aria-labelledby="dTitle">
+  <div class="sheet-in">
+    <div class="bar">
+      <button class="iconbtn" type="button" data-close aria-label="戻る"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <span></span>
+    </div>
+    <div id="detailBody"></div>
+  </div>
+</div>
+
+<!-- ===== settings ===== -->
+<div class="sheet" id="moreSheet" hidden role="dialog" aria-modal="true" aria-labelledby="moreTitle">
+  <div class="sheet-in">
+    <div class="bar">
+      <button class="iconbtn" type="button" data-close aria-label="閉じる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <h2 id="moreTitle">設定</h2><span style="width:24px"></span>
+    </div>
+    <div class="panel">
+      <h3>このジャンル</h3>
+      <p>名前・表紙の写真・色を変えられます。</p>
+      <div class="row"><button class="btn primary" type="button" id="editCatBtn">ジャンルを編集</button><button class="btn" type="button" id="toHomeBtn">ジャンル一覧へ</button></div>
+    </div>
+    <div class="panel">
+      <h3>地図のピンの色</h3>
+      <p>タップすると色を選べます。全ジャンル共通です。</p>
+      <div class="colors">
+        <label>行ったことある<input type="color" id="cVisit"></label>
+        <label>行ってみたい<input type="color" id="cWish"></label>
+        <label>また行きたい<input type="color" id="cAgain"></label>
+      </div>
+      <div class="row"><button class="linkbtn" type="button" id="cReset">最初の色に戻す</button></div>
+    </div>
+    <div class="panel">
+      <h3>共有コードで追加</h3>
+      <p>シェアされた「共有コード」を貼り付けると、行ってみたいに追加できます。</p>
+      <div class="field" style="margin-top:10px"><textarea id="importCode" placeholder="ここに貼り付け" style="min-height:70px" aria-label="共有コード"></textarea></div>
+      <div class="row"><button class="btn primary" type="button" id="importCodeBtn">追加する</button></div>
+    </div>
+    <div class="panel">
+      <h3>バックアップ</h3>
+      <p>記録と写真はこのiPhoneの中に保存されます。機種変更やアプリを消す前に書き出して「ファイルに保存」してください。全ジャンルまとめて書き出します。</p>
+      <p class="note" id="backupNudge" hidden></p>
+      <div class="row">
+        <button class="btn primary" id="exportBtn" type="button">記録を書き出す</button>
+        <button class="btn" id="importBtn" type="button">ファイルから戻す</button>
+        <input id="importFile" type="file" accept="application/json,.json" hidden>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>ホーム画面に置く・人に勧める</h3>
+      <ol><li>Safariでこのアプリのアドレスを開く</li><li>共有ボタン（□に↑）を押す</li><li>「ホーム画面に追加」→「追加」</li></ol>
+    </div>
+    <p id="storeWarn" class="err" hidden>保存ができない状態です。プライベートブラウズを切るか、ホーム画面のアイコンから開き直してください。</p>
+  </div>
+</div>
+
+<!-- ===== hero ===== -->
+<div class="sheet" id="heroSheet" hidden role="dialog" aria-modal="true" aria-labelledby="heroTitle">
+  <div class="sheet-in">
+    <div class="bar">
+      <button class="iconbtn" type="button" data-close aria-label="閉じる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      <h2 id="heroTitle">トップの写真</h2><span style="width:24px"></span>
+    </div>
+    <div class="form">
+      <div class="photo-pick"><img id="heroPrev" alt="選んだ写真" hidden><span class="hint" id="heroPrevHint">写真を選んでください</span></div>
+      <div class="pbtns">
+        <button class="btn" type="button" id="heroCamBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>カメラ</button>
+        <button class="btn" type="button" id="heroLibBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>写真フォルダ</button>
+      </div>
+      <div><span class="flabel">記録の写真から選ぶ</span><div class="hpicks" id="heroPicks"></div><p class="hint" id="heroNoPicks" hidden>まだ写真のある記録がありません。</p></div>
+      <div class="field"><label for="heroText">写真に重ねる文字</label><input id="heroText" maxlength="24" autocomplete="off" placeholder="例：純喫茶 みどり"></div>
+      <div class="actions"><button class="btn primary" type="button" id="heroSave">この写真にする</button></div>
+      <div class="photo-row"><button class="linkbtn" type="button" id="heroReset">最初の表示に戻す</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== switch ===== -->
+<div class="sheet" id="switchSheet" hidden role="dialog" aria-modal="true" aria-labelledby="switchTitle">
+  <div class="sheet-in">
+    <div class="bar">
+      <button class="iconbtn" type="button" data-close aria-label="閉じる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      <h2 id="switchTitle">ジャンルを切り替え</h2><span style="width:24px"></span>
+    </div>
+    <div class="swlist" id="switchList"></div>
+    <div class="row" style="justify-content:center;margin-top:18px"><button class="btn" type="button" id="switchHome">ジャンル一覧（追加・並べ替え）</button></div>
+  </div>
+</div>
+
+<!-- ===== genre add/edit ===== -->
+<div class="sheet" id="catSheet" hidden role="dialog" aria-modal="true" aria-labelledby="catSheetTitle">
+  <div class="sheet-in">
+    <div class="bar">
+      <button class="iconbtn" type="button" data-close aria-label="閉じる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      <h2 id="catSheetTitle">ジャンルを追加</h2>
+      <button class="btn primary" type="button" id="catSave">保存</button>
+    </div>
+    <div class="form">
+      <div class="field"><label for="catName">ジャンルの名前 <span class="req">*</span></label><input id="catName" maxlength="12" autocomplete="off" placeholder="例：温泉・サウナ、映画、お酒"><div class="err" id="catNameErr" hidden>名前を入れてください</div></div>
+      <div class="field"><label for="catSubIn">ひとこと（一覧に小さく出ます）</label><input id="catSubIn" maxlength="16" autocomplete="off" placeholder="例：ととのいの記録"></div>
+      <div id="tmplWrap"><span class="flabel">記録の形</span><div class="tmpls" id="tmplPick"></div><p class="hint">あとから変えることはできません。</p></div>
+      <div><span class="flabel">色</span><div class="swatches" id="themePick"></div></div>
+      <div>
+        <span class="flabel">詳細画面のリンクボタン</span>
+        <div class="llist" id="linkList"></div>
+        <div class="row" style="margin-top:8px"><button class="btn" type="button" id="linkAdd">＋ボタンを追加</button></div>
+        <div id="linkCustom" hidden class="panel" style="margin-top:8px">
+          <h3>自分でボタンを作る</h3>
+          <p>そのサイトで「テスト」と検索したページのアドレスを貼り付けてください。</p>
+          <div class="field" style="margin-top:8px"><label for="lcName">ボタンの名前</label><input id="lcName" maxlength="14" autocomplete="off" placeholder="例：じゃらん"></div>
+          <div class="field" style="margin-top:8px"><label for="lcUrl">「テスト」で検索したページのアドレス</label><input id="lcUrl" inputmode="url" autocomplete="off" placeholder="https://〜テスト〜"></div>
+          <div class="row" style="align-items:center"><label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700">色 <input type="color" id="lcColor" value="#3A6EA5" style="width:40px;height:32px;border:0;padding:0;background:none"></label></div>
+          <div class="err" id="lcErr" hidden></div>
+          <div class="row"><button class="btn primary" type="button" id="lcSave">追加</button><button class="btn" type="button" id="lcCancel">やめる</button></div>
+        </div>
+      </div>
+      <label class="toggle" for="catStreaming" id="catStreamingWrap"><span><b>配信サービスを表示</b><br><small style="color:var(--muted)" id="catStreamingSub">映画・ドラマ・アニメ向け。いま見られるサービスのアイコンを表示</small></span><input id="catStreaming" type="checkbox"></label>
+      <div>
+        <span class="flabel">表紙の写真</span>
+        <div class="photo-pick" style="aspect-ratio:1;width:50%"><img id="catCoverPrev" alt="表紙" hidden><span class="hint" id="catCoverHint">未設定（文字の表紙になります）</span></div>
+        <div class="pbtns">
+          <button class="btn" type="button" id="catCam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>カメラ</button>
+          <button class="btn" type="button" id="catLib"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>写真フォルダ</button>
+        </div>
+        <div class="photo-row"><button class="linkbtn" type="button" id="catCoverReset" hidden>最初の表紙に戻す</button></div>
+      </div>
+      <div class="dactions" id="catDelWrap" hidden><button class="btn danger" type="button" id="catDelete">このジャンルを削除</button></div>
+      <p class="hint" id="catDelHint" hidden>削除すると、このジャンルの記録もすべて消えます。先に設定から書き出しておくと安心です。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== location picker ===== -->
+<div class="sheet" id="locSheet" hidden role="dialog" aria-modal="true" aria-labelledby="locTitle">
+  <div class="sheet-in">
+    <div class="bar">
+      <button class="iconbtn" type="button" data-close aria-label="閉じる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      <h2 id="locTitle">地図の位置</h2>
+      <button class="btn primary" type="button" id="locOk">この場所にする</button>
+    </div>
+    <form class="addrow" id="locSearchForm" novalidate style="padding-top:0">
+      <input id="locQuery" placeholder="住所で探す（例：名古屋市中村区名駅）" aria-label="住所で探す" autocomplete="off" enterkeyhint="search">
+      <button class="btn primary" type="submit">検索</button>
+    </form>
+    <div class="results" id="locResults"></div>
+    <div class="mapwrap" style="height:56vh;min-height:300px"><div id="locMap"></div><div class="centerpin"><div class="gm-pin" id="locPin"></div></div></div>
+    <div class="row">
+      <button class="btn" type="button" id="locHere">現在地へ移動</button>
+      <button class="linkbtn" type="button" id="locClear">位置を外す</button>
+    </div>
+    <p class="hint">地図を動かして、ピンの先をお店に合わせてください。店名での検索はできません（Googleを使わないため）。</p>
+  </div>
+</div>
+
+<!-- ===== incoming share ===== -->
+<div class="sheet" id="addSheet" hidden role="dialog" aria-modal="true" aria-labelledby="addTitle">
+  <div class="sheet-in">
+    <div class="bar">
+      <button class="iconbtn" type="button" data-close aria-label="閉じる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      <h2 id="addTitle">おすすめが届きました</h2><span style="width:24px"></span>
+    </div>
+    <div id="addCard"></div>
+    <div class="form">
+      <div class="field" id="addCatWrap"><label for="addCat">追加するジャンル</label><select id="addCat"></select></div>
+      <div class="actions"><button class="btn primary" type="button" id="addGo">「行ってみたい」に追加</button></div>
+      <div id="addCopyWrap" hidden>
+        <p class="hint" style="font-size:13px;color:var(--ink)">いまSafariで開いています。ホーム画面のStashに追加するには、下のボタンでコードをコピーして、Stashの「設定 → 共有コードで追加」に貼り付けてください。</p>
+        <div class="actions"><button class="btn" type="button" id="addCopy">共有コードをコピー</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== home background ===== -->
+<div class="sheet" id="bgSheet" hidden role="dialog" aria-modal="true" aria-labelledby="bgTitle">
+  <div class="sheet-in">
+    <div class="bar">
+      <button class="iconbtn" type="button" data-close aria-label="閉じる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      <h2 id="bgTitle">ホームの背景</h2>
+      <button class="btn primary" type="button" id="bgSave">保存</button>
+    </div>
+    <div class="form">
+      <div class="bgprev" id="bgPrev" aria-label="見本"></div>
+      <div><span class="flabel">背景にするもの</span><div class="tmpls" id="bgMode"></div></div>
+      <div id="bgPhotosWrap">
+        <span class="flabel">写真（10枚まで・順番に切り替わります）</span>
+        <div class="bgthumbs" id="bgThumbs"></div>
+        <div class="pbtns" style="margin-top:8px">
+          <button class="btn" type="button" id="bgLib"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>写真フォルダ</button>
+          <button class="btn" type="button" id="bgCam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>カメラ</button>
+        </div>
+      </div>
+      <div id="bgVideoWrap">
+        <span class="flabel">動画（音は出ません・くり返し再生）</span>
+        <div class="pbtns"><button class="btn" type="button" id="bgVid"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3z"/></svg>動画を選ぶ</button></div>
+        <p class="hint" id="bgVidInfo">短め（30秒・50MBくらいまで）の動画がおすすめです。</p>
+      </div>
+      <div><span class="flabel">ぼかし</span><div class="slider"><input type="range" id="bgBlur" min="0" max="12" step="1" aria-label="ぼかしの強さ"><output id="bgBlurOut"></output></div></div>
+      <div><span class="flabel">暗さ（文字の読みやすさ）</span><div class="slider"><input type="range" id="bgDim" min="0" max="70" step="5" aria-label="暗さ"><output id="bgDimOut"></output></div></div>
+      <div class="photo-row"><button class="linkbtn" type="button" id="bgReset">最初の設定に戻す</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TMDB: choose the right title ===== -->
+<div class="sheet" id="tmdbSheet" hidden role="dialog" aria-modal="true" aria-labelledby="tmdbTitle">
+  <div class="sheet-in">
+    <div class="bar">
+      <button class="iconbtn" type="button" data-close aria-label="閉じる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      <h2 id="tmdbTitle">作品を選ぶ</h2><span style="width:24px"></span>
+    </div>
+    <form class="addrow" id="tmdbForm" novalidate style="padding-top:0">
+      <input id="tmdbQuery" aria-label="作品名で探す" autocomplete="off" enterkeyhint="search">
+      <button class="btn primary" type="submit">検索</button>
+    </form>
+    <div class="results" id="tmdbResults"></div>
+    <p class="credit">作品情報：TMDB。This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
+  </div>
+</div>
+
+<div class="act" id="act" hidden><div class="act-in" id="actIn"></div></div>
+<div class="viewer" id="viewer" hidden role="dialog" aria-label="写真を大きく表示"><img id="viewerImg" alt=""><span class="viewer-x">タップで閉じる</span></div>
+<div class="toast" id="toast" hidden role="status"></div>
+
+<input id="pickCam" type="file" accept="image/*" capture="environment" hidden>
+<input id="pickLib" type="file" accept="image/*" hidden>
+<input id="pickLibMulti" type="file" accept="image/*" multiple hidden>
+<input id="pickVid" type="file" accept="video/*" hidden>
+
+<script src="vendor/leaflet.js"></script>
+<script src="js/config.js"></script>
+<script src="js/core.js"></script>
+<script src="js/form.js"></script>
+<script src="js/detail.js"></script>
+<script src="js/links.js"></script>
+<script src="js/map.js"></script>
+<script src="js/views.js"></script>
+<script src="js/main.js"></script>
 </body>
 </html>

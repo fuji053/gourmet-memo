@@ -1,17 +1,17 @@
-// グルメモ — offline support. Bump VERSION when files change so phones pick up the update.
-const VERSION = 'gourmet-memo-v3';
+// Stash — offline support. Bump VERSION when files change so phones pick up the update.
+const VERSION = 'gurumemo-v9';
 const FONTS = VERSION + '-fonts';
 const SHELL = [
   './', './index.html', './manifest.webmanifest',
-  './izakaya/', './izakaya/index.html', './kissa/', './kissa/index.html',
+  './js/config.js', './js/core.js', './js/form.js', './js/detail.js', './js/links.js', './js/map.js', './js/views.js', './js/main.js',
+  './vendor/leaflet.js', './vendor/leaflet.css',
   './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png',
-  './splash/logo.png',
+  './fonts/stash-logo.woff2',
   './media/izakaya.jpg', './media/kissa.jpg',
   './media/bg-izakaya.jpg', './media/bg-izakaya.mp4', './media/bg-kissa.jpg', './media/bg-kissa.mp4',
 ];
 
 self.addEventListener('install', e => {
-  // cache what we can; a single missing file must not block the app from installing
   e.waitUntil(caches.open(VERSION).then(c => Promise.all(SHELL.map(u => c.add(u).catch(() => {})))).then(() => self.skipWaiting()));
 });
 
@@ -30,25 +30,28 @@ self.addEventListener('fetch', e => {
 
   if (url.origin === location.origin) {
     if (req.mode === 'navigate') {
-      // network first so updates arrive; cached page when offline
       e.respondWith(
         fetch(req, {cache: 'no-store'}).then(res => {
           const copy = res.clone();
           caches.open(VERSION).then(c => c.put(req, copy));
           return res;
-        }).catch(() => caches.match(req, {ignoreSearch: true}).then(hit => hit || caches.match(new URL('index.html', req.url).href)))
+        }).catch(() => caches.match(req, {ignoreSearch: true}).then(hit => hit || caches.match(new URL('./', self.registration.scope).href)))
       );
       return;
     }
-    // video needs range requests: let the network handle it, fall back to cache offline
     if (url.pathname.endsWith('.mp4')) {
       e.respondWith(fetch(req).catch(() => caches.match(req, {ignoreSearch: true})));
       return;
     }
-    e.respondWith(caches.match(req, {ignoreSearch: true}).then(hit => hit || fetch(req)));
+    // app files: network first (fresh after an update), cache when offline
+    e.respondWith(fetch(req, {cache: 'no-cache'}).then(res => {
+      if (res.ok) { const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy)); }
+      return res;
+    }).catch(() => caches.match(req, {ignoreSearch: true})));
     return;
   }
 
+  // fonts are cached; map tiles (国土地理院) are always loaded live as their terms require
   if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
     e.respondWith(caches.open(FONTS).then(async c => {
       const hit = await c.match(req);

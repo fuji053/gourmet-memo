@@ -1,7 +1,7 @@
 {
-  "name": "グルメモ",
-  "short_name": "グルメモ",
-  "description": "居酒屋と喫茶を一軒ずつ記録するメモアプリ",
+  "name": "Stash",
+  "short_name": "Stash",
+  "description": "居酒屋・喫茶・好きなジャンルを記録するメモアプリ",
   "lang": "ja",
   "start_url": "./",
   "scope": "./",
