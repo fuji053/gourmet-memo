@@ -28,6 +28,7 @@ function galleryHTML(e){   // 追加したジャンル：シンプルなカー�
 }
 function photosHTML(title, arr, cls){
   if (!arr || !arr.length) return '';
+  if (cls === 'wide' || cls === 'sq') return `<section class="dsec"><h4>${esc(title)}</h4><div class="${cls === 'wide' ? 'pwide' : 'psq'}">${arr.map((u, i) => `<img src="${u}" alt="${esc(title)} ${i + 1}枚目" data-full="${u}" loading="lazy">`).join('')}</div></section>`;
   if (cls === 'menugrid') return `<section class="dsec"><h4>${esc(title)}</h4><div class="menugrid">${arr.map((u, i) => `<img src="${u}" alt="${esc(title)} ${i + 1}枚目" data-full="${u}">`).join('')}</div><p class="hint">タップで大きく表示</p></section>`;
   return `<section class="dsec"><h4>${esc(title)}</h4><div class="mgrid p ${arr.length <= 3 ? 'n' + arr.length : 'many'}">${arr.map((u, i) => `<img src="${u}" alt="${esc(title)} ${i + 1}枚目" data-full="${u}">`).join('')}</div></section>`;
 }
@@ -67,9 +68,9 @@ function openDetail(id, refreshOnly){
     </dl>
     ${streamHTML(e)}
     ${board}
-    ${t.interior ? photosHTML('店内の雰囲気', e.interior, 'strip') + (e.mood ? `<p class="mood">${esc(e.mood)}</p>` : '') : ''}
-    ${t.menus ? photosHTML('メニュー表', e.menus, 'menugrid') : ''}
-    ${t.gallery ? photosHTML('写真', e.gallery, 'strip') : ''}
+    ${photosHTML('メニュー', e.menus, 'wide')}
+    ${photosHTML(cur.tmpl === 'work' ? '写真' : 'その他', [...(e.interior || []), ...(e.gallery || [])], 'sq')}
+    ${e.mood ? `<p class="mood">${esc(e.mood)}</p>` : ''}
     ${t.video ? videosHTML(e.videos) : ''}
     ${e.sample ? '' : '<div class="dactions"><button class="btn danger" type="button" id="dDel">この記録を削除</button></div>'}`;
   const body = $('#detailBody');

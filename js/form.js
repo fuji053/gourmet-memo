@@ -24,7 +24,7 @@ function applyFormLabels(){
   $('#tagsLabel').textContent = t.tags + (cur.tmpl === 'izakaya' ? '' : '（当てはまるものを全部タップ）');
   $('#againToggleLabel').textContent = t.again;
   $('#againToggleSub').textContent = `「${t.again}」ページに並びます`;
-  $('#galleryLabel').textContent = cur.tmpl === 'work' ? '写真（ポスター・ラベルなど）' : '写真';
+  $('#galleryLabel').textContent = cur.tmpl === 'work' ? '写真（ポスター・ラベルなど）' : 'その他';
   $('#photoHintText').textContent = t.shop ? '写真を入れると、撮った日が自動で入ります' : '写真を入れると、撮った日が自動で入ります';
   $('#fMemo').placeholder = cur.tmpl === 'izakaya' ? 'ちょっとしたメモに。雰囲気、席、混み具合、一緒に行った人など' : cur.tmpl === 'kissa' ? 'ちょっとしたメモに。営業時間、混み具合、Wi-Fiの有無など' : 'ちょっとしたメモに';
   $('#wMenuLabel').textContent = cur.tmpl === 'work' ? '気になるポイント' : '気になるメニュー';
@@ -102,7 +102,7 @@ $('#dishList').addEventListener('click', e => {
   if (e.target.closest('[data-down]') && i < F.dishes.length - 1) { [F.dishes[i+1], F.dishes[i]] = [F.dishes[i], F.dishes[i+1]]; renderDishes(); return; }
   if (e.target.closest('[data-photo]')) {
     const set = async files => { const out = await compressAll(files.slice(0, 1), 900); if (out[0]) { d.photo = out[0]; renderDishes(); } };
-    const acts = [{label:'カメラで撮る', fn:() => pickPhotos({camera:true}).then(set)}, {label:'写真フォルダから選ぶ', fn:() => pickPhotos({}).then(set)}];
+    const acts = [{label:'写真フォルダから選ぶ', fn:() => pickPhotos({}).then(set)}];
     if (d.photo) acts.push({label:'写真を外す', danger:true, fn:() => { d.photo = ''; renderDishes(); }});
     actionSheet(d.name || '写真', acts);
   }
@@ -121,7 +121,7 @@ $('#dishLib').addEventListener('click', () => pickPhotos({multiple:true}).then(a
 $('#dishPlain').addEventListener('click', () => { const d = {id:newId('d'), name:'', rec:false, photo:''}; F.dishes.push(d); renderDishes(); focusDish(d.id); });
 
 /* ---------- photo grids: 店内 / メニュー表 / 写真 ---------- */
-const SHOTS = { interior:{box:'#interiorShots', max:1100, label:'店内'}, menu:{box:'#menuShots', max:1600, label:'メニュー表'}, gallery:{box:'#galleryShots', max:1280, label:'写真'} };
+const SHOTS = { interior:{box:'#interiorShots', max:1100, label:'店内'}, menu:{box:'#menuShots', max:1600, label:'メニュー'}, gallery:{box:'#galleryShots', max:1280, label:'写真'} };
 const shotArr = kind => kind === 'interior' ? F.interior : kind === 'menu' ? F.menus : F.gallery;
 function renderShots(){
   for (const [kind, s] of Object.entries(SHOTS)) {
@@ -130,8 +130,7 @@ function renderShots(){
 }
 document.querySelectorAll('[data-shots]').forEach(box => {
   const kind = box.dataset.shots;
-  box.innerHTML = `<button class="btn" type="button" data-cam>${CAM}カメラ</button><button class="btn" type="button" data-lib>${LIB}写真フォルダ</button>`;
-  box.querySelector('[data-cam]').addEventListener('click', () => pickPhotos({camera:true}).then(async f => { (await compressAll(f, SHOTS[kind].max)).forEach(p => shotArr(kind).push(p)); renderShots(); }));
+  box.innerHTML = `<button class="btn" type="button" data-lib>${LIB}写真フォルダ</button>`;
   box.querySelector('[data-lib]').addEventListener('click', () => pickPhotos({multiple:true}).then(async f => {
     if (!f.length) return; toast(`${f.length}枚を読み込み中…`);
     (await compressAll(f, SHOTS[kind].max)).forEach(p => shotArr(kind).push(p)); renderShots();
@@ -145,7 +144,6 @@ document.querySelectorAll('[data-shots]').forEach(box => {
   if (i > 0) acts.push({label:'← 前へ', fn:() => { [arr[i-1], arr[i]] = [arr[i], arr[i-1]]; renderShots(); }});
   if (i < arr.length - 1) acts.push({label:'次へ →', fn:() => { [arr[i+1], arr[i]] = [arr[i], arr[i+1]]; renderShots(); }});
   if (i > 0) acts.push({label:'いちばん先頭にする', fn:() => { arr.unshift(arr.splice(i, 1)[0]); renderShots(); }});
-  acts.push({label:'カメラで撮り直す', fn:() => pickPhotos({camera:true}).then(replace)});
   acts.push({label:'写真フォルダから差し替え', fn:() => pickPhotos({}).then(replace)});
   acts.push({label:'この写真を削除', danger:true, fn:() => { arr.splice(i, 1); renderShots(); }});
   actionSheet(`${SHOTS[b.dataset.kind].label} ${i + 1}枚目`, acts);
@@ -228,7 +226,7 @@ function openEdit(entry, opts = {}){
   $('#fResv').value = entry?.resv || '';
   $('#fNomi').checked = !!entry?.nomi;
   F.dishes = (entry?.dishes || []).map(d => ({...d}));
-  F.interior = (entry?.interior || []).slice(); F.menus = (entry?.menus || []).slice(); F.gallery = (entry?.gallery || []).slice();
+  F.interior = []; F.menus = (entry?.menus || []).slice(); F.gallery = [...(entry?.interior || []), ...(entry?.gallery || [])];
   F.videos = (entry?.videos || []).slice();
   F.tags = entry ? tagsOf(entry).slice() : (view === 'types' && typeSel !== 'all' ? [typeSel] : []);
   F.loc = entry && entry.lat != null ? {lat:entry.lat, lng:entry.lng} : null;
@@ -253,7 +251,7 @@ $('#editForm').addEventListener('submit', async e => {
     dishes: t.items ? F.dishes.filter(d => d.name || d.photo).map(d => ({id:d.id, name:cleanName(d.name), rec:!!d.rec, photo:d.photo || ''})) : [],
     interior: t.interior ? F.interior.slice() : [], menus: t.menus ? F.menus.slice() : [], gallery: t.gallery ? F.gallery.slice() : [],
     videos: t.video ? (F.videos || []).slice() : [],
-    mood: t.interior ? cleanName($('#fMood').value) : '',
+    mood: t.interior ? cleanName($('#fMood').value) : (prev?.mood || ''),
     total, people, price: t.price ? perPerson(total, people) : '',
     resv: t.resv ? $('#fResv').value : '', nomi: t.nomi ? $('#fNomi').checked : false,
     pref: t.shop ? $('#fPref').value : '', place: t.shop ? cleanName($('#fPlace').value) : '',

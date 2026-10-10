@@ -115,6 +115,9 @@ button{cursor:pointer;-webkit-user-select:none;user-select:none}
 .pill.icon{padding:0;width:42px;justify-content:center}
 .pill.icon svg{width:20px;height:20px}
 .tcount{font-family:var(--f-body);font-size:15px;font-weight:700;color:var(--muted);margin-left:8px;vertical-align:middle}
+#view-all .top{display:block}
+.toprow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.toprow .eyebrow{margin:0}
 .dchips{display:flex;gap:8px;overflow-x:auto;padding:12px 0 2px;scrollbar-width:none}
 .dchips::-webkit-scrollbar{display:none}
 .dchips button{flex:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:7px 14px;font-size:14px;font-weight:700}
@@ -326,6 +329,25 @@ body:has(#view-map:not([hidden])) .toast{top:calc(var(--sat) + 116px)}
 .pbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
 .pbtns .btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:12px 8px;border-radius:12px}
 .pbtns .btn svg{width:19px;height:19px;flex:none}
+.pbtns>.btn:only-child,.pbtns>[hidden]+.btn,.pbtns>.btn:has(+[hidden]){grid-column:1/-1}
+.shots.wide{grid-template-columns:1fr;gap:8px}.shots.wide .shot img{aspect-ratio:16/9;border-radius:12px}
+.shots.sq{grid-template-columns:repeat(3,1fr);gap:2px}.shots.sq .shot img{border-radius:0}
+.pwide{display:grid;gap:8px}.pwide img{width:100%;aspect-ratio:16/9;max-width:none;object-fit:cover;border-radius:var(--r);display:block;background:var(--surface);cursor:zoom-in}
+.psq{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-inline:-16px}.psq img{width:100%;aspect-ratio:1;max-width:none;object-fit:cover;display:block;background:var(--surface);cursor:zoom-in}
+.calnav{display:flex;align-items:center;justify-content:space-between;margin:4px 0 10px}
+.calnav b{font-family:var(--f-display);font-size:20px;font-weight:var(--dw)}
+.calnav button{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:20px;line-height:1}
+.calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.calgrid .dow{font-size:11px;font-weight:700;color:var(--muted);padding:4px 0}
+.calgrid .dow.sun{color:#D93025}.calgrid .dow.sat{color:#1a73e8}
+.calgrid .day{position:relative;aspect-ratio:1;border:0;border-radius:12px;background:none;color:var(--ink);font-size:15px;font-weight:500;padding:0;display:flex;align-items:center;justify-content:center}
+.calgrid .day.today{box-shadow:inset 0 0 0 2px var(--line)}
+.calgrid .day.has{background:var(--yolk);color:#fff;font-weight:800;overflow:hidden}
+.calgrid .day.has img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55}
+.calgrid .day.has span{position:relative;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.calgrid .day .cnt{position:absolute;top:2px;right:3px;background:#fff;color:var(--ink);border-radius:999px;font-size:9px;font-weight:800;padding:0 4px;line-height:14px;text-shadow:none;font-style:normal}
+.calgrid .day.sel{outline:3px solid var(--ink);outline-offset:-1px}
+.calsum{margin:14px 0 8px;font-size:14px;font-weight:700;color:var(--muted)}
 .photo-row{display:flex;justify-content:flex-end;margin-top:2px}
 .rate{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 12px 12px;text-align:center}
 .rate .stars{touch-action:none;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
@@ -562,12 +584,14 @@ body:has(#view-map:not([hidden])) .toast{top:calc(var(--sat) + 116px)}
   <div class="wrap">
     <section id="view-all" class="view">
       <header class="top">
-        <h1 class="brand"><span class="eyebrow">Stash</span><span id="catTitle">居酒屋</span><span class="tcount" id="catCount"></span></h1>
+        <div class="toprow"><span class="eyebrow">Stash</span>
         <div class="topbtns">
           <button class="pill" type="button" id="switchBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg><span id="switchLabel">切替</span></button>
+          <button class="pill icon" type="button" id="calBtn" aria-label="カレンダー"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></button>
           <button class="pill icon" type="button" id="homeBtn" aria-label="ジャンル一覧（ホーム）へ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg></button>
           <button class="gear" type="button" id="moreBtn" aria-label="設定とバックアップ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
-        </div>
+        </div></div>
+        <h1 class="brand"><span id="catTitle">居酒屋</span><span class="tcount" id="catCount"></span></h1>
       </header>
       <div class="hero" id="hero">
         <video id="heroVid" autoplay muted loop playsinline preload="auto" aria-hidden="true" hidden></video>
@@ -696,7 +720,7 @@ body:has(#view-map:not([hidden])) .toast{top:calc(var(--sat) + 116px)}
         <span class="flabel" id="itemsLabel">頼んだもの・おすすめ</span>
         <div id="dishList" class="dish-list"></div>
         <div class="pbtns">
-          <button class="btn" type="button" id="dishCam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>撮って追加</button>
+          <button class="btn" type="button" id="dishCam" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>撮って追加</button>
           <button class="btn" type="button" id="dishLib"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>写真からまとめて</button>
         </div>
         <div class="photo-row"><button class="linkbtn" type="button" id="dishPlain">写真なしで追加</button></div>
@@ -709,13 +733,13 @@ body:has(#view-map:not([hidden])) .toast{top:calc(var(--sat) + 116px)}
         <div class="field" style="margin-top:8px"><input id="fMood" autocomplete="off" placeholder="ひとこと（例：昭和の照明、ジャズが流れている）" aria-label="店内の雰囲気のひとこと"></div>
       </div>
       <div data-need="menus">
-        <span class="flabel">メニュー表</span>
-        <div class="shots" id="menuShots"></div>
+        <span class="flabel">メニュー</span>
+        <div class="shots wide" id="menuShots"></div>
         <div class="pbtns" data-shots="menu"></div>
       </div>
       <div data-need="gallery">
         <span class="flabel" id="galleryLabel">写真</span>
-        <div class="shots" id="galleryShots"></div>
+        <div class="shots sq" id="galleryShots"></div>
         <div class="pbtns" data-shots="gallery"></div>
       </div>
 
@@ -723,7 +747,7 @@ body:has(#view-map:not([hidden])) .toast{top:calc(var(--sat) + 116px)}
         <span class="flabel">動画</span>
         <div class="shots" id="videoShots"></div>
         <div class="pbtns">
-          <button class="btn" type="button" id="vidCam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3z"/></svg>動画を撮る</button>
+          <button class="btn" type="button" id="vidCam" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3z"/></svg>動画を撮る</button>
           <button class="btn" type="button" id="vidLib"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>写真フォルダ</button>
         </div>
         <p class="hint">1本50MBまで（30秒くらいがおすすめ）。詳細では音なしでくり返し再生、タップで大きく・音ありで見られます。</p>
@@ -800,6 +824,19 @@ body:has(#view-map:not([hidden])) .toast{top:calc(var(--sat) + 116px)}
 </div>
 
 <!-- ===== detail ===== -->
+<!-- カレンダー -->
+<div class="sheet" id="calSheet" hidden role="dialog" aria-modal="true" aria-labelledby="calTitle">
+  <div class="sheet-in">
+    <div class="bar">
+      <button class="iconbtn" type="button" data-close aria-label="閉じる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      <h2 id="calTitle">カレンダー</h2><span style="width:24px"></span>
+    </div>
+    <div class="calnav"><button type="button" id="calPrev" aria-label="前の月">‹</button><b id="calMonth"></b><button type="button" id="calNext" aria-label="次の月">›</button></div>
+    <div class="calgrid" id="calGrid"></div>
+    <p class="calsum" id="calSum"></p>
+    <div class="list" id="calList"></div>
+  </div>
+</div>
 <div class="sheet" id="detailSheet" hidden role="dialog" aria-modal="true" aria-labelledby="dTitle">
   <div class="sheet-in">
     <div class="bar">
@@ -1047,5 +1084,6 @@ body:has(#view-map:not([hidden])) .toast{top:calc(var(--sat) + 116px)}
 <script src="js/map.js"></script>
 <script src="js/views.js"></script>
 <script src="js/main.js"></script>
+<script src="js/calendar.js"></script>
 </body>
 </html>
