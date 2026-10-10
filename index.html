@@ -18,6 +18,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=DotGothic16&family=Shippori+Mincho+B1:wght@600;800&family=Yuji+Syuku&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="vendor/leaflet.css">
+<link rel="stylesheet" href="vendor/maplibre-gl.css">
 <link rel="preload" href="fonts/stash-logo.woff2" as="font" type="font/woff2" crossorigin>
 <style>
 /* Layout: Netflix-style shell. Black opening + genre picker; each genre opens a one-column phone notebook (ticket cards, LED numbers) themed per genre. Theme tokens are generated in js/core.js per genre. */
@@ -243,7 +244,11 @@ button{cursor:pointer;-webkit-user-select:none;user-select:none}
 .mcard .mrow a,.mcard .mrow button{border:1px solid #dadce0;background:#fff;color:#1a73e8;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700;text-decoration:none}
 .mcard .mrow .pri{background:#1a73e8;color:#fff;border-color:#1a73e8}
 .mcard .mx{position:absolute;top:6px;right:6px;width:30px;height:30px;border:0;background:none;color:#5f6368;font-size:18px}
+.gpin{cursor:pointer}
 .gpin svg{display:block;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))}
+.hereDot{width:18px;height:18px;border-radius:50%;background:#1a73e8;border:3px solid #fff;box-shadow:0 0 0 6px rgba(26,115,232,.2),0 1px 4px rgba(0,0,0,.3)}
+.mapfull .maplibregl-ctrl-attrib{font-size:10px}
+.mapfull .maplibregl-ctrl-bottom-left,.mapfull .maplibregl-ctrl-bottom-right{bottom:calc(var(--sab) + 2px)}
 .mapfull .leaflet-control-attribution{font-size:9px}
 .mapwrap{position:relative;margin-top:14px;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);height:calc(100vh - 290px);height:calc(100dvh - 290px);min-height:320px;background:var(--surface)}
 #mapBox,#locMap{position:absolute;inset:0}
@@ -1029,6 +1034,7 @@ body:has(#view-map:not([hidden])) .toast{top:calc(var(--sat) + 116px)}
 <input id="pickVidLib" type="file" accept="video/*" multiple hidden>
 
 <script src="vendor/leaflet.js"></script>
+<script src="vendor/maplibre-gl.js"></script>
 <script src="js/config.js"></script>
 <script src="js/core.js"></script>
 <script src="js/form.js"></script>

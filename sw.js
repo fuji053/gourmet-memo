@@ -1,10 +1,10 @@
 // Stash — offline support. Bump VERSION when files change so phones pick up the update.
-const VERSION = 'gurumemo-v18';
+const VERSION = 'gurumemo-v19';
 const FONTS = VERSION + '-fonts';
 const SHELL = [
   './', './index.html', './manifest.webmanifest',
   './js/config.js', './js/core.js', './js/form.js', './js/detail.js', './js/links.js', './js/google.js', './js/video.js', './js/search.js', './js/map.js', './js/views.js', './js/main.js',
-  './vendor/leaflet.js', './vendor/leaflet.css',
+  './vendor/leaflet.js', './vendor/leaflet.css', './vendor/maplibre-gl.js', './vendor/maplibre-gl.css',
   './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png',
   './fonts/stash-logo.woff2',
   './media/izakaya.jpg', './media/kissa.jpg',

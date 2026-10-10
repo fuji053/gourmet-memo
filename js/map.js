@@ -1,4 +1,4 @@
-/* Stash — in-app map (国土地理院 標準地図) with a Google-Maps-like layout */
+/* Stash — in-app map (MapLibre + OpenFreeMap, Google-Maps-like layout) & legacy location picker (Leaflet) */
 'use strict';
 
 const GSI_TILES = 'https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png';
@@ -13,8 +13,12 @@ function locateHere(cb){
   navigator.geolocation.getCurrentPosition(p => cb({lat:+p.coords.latitude.toFixed(6), lng:+p.coords.longitude.toFixed(6)}), () => cb(null), {enableHighAccuracy:true, timeout:10000, maximumAge:60000});
 }
 
-/* ---------- main map tab ---------- */
-let mainMap = null, pinLayer = null;
+/* ---------- main map tab (MapLibre + OpenFreeMap; falls back to 国土地理院 if it can't load) ---------- */
+const OFM_STYLE = 'https://tiles.openfreemap.org/styles/liberty';
+const GSI_STYLE = {version:8, sources:{gsi:{type:'raster', tiles:['https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png'], tileSize:256, maxzoom:18,
+  attribution:'<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">地理院タイル</a>'}}, layers:[{id:'gsi', type:'raster', source:'gsi'}]};
+const hasML = () => typeof maplibregl !== 'undefined';
+let mainMap = null, mapReady = false, pinMarkers = [], usingFallback = false;
 let mapShow = (() => { try { return JSON.parse(lsGet('gm-mapshow')) || {visit:true, wish:true, again:true}; } catch { return {visit:true, wish:true, again:true}; } })();
 const mapKind = r => r.list === 'wish' ? 'wish' : (r.again ? 'again' : 'visit');
 function renderLegend(){
@@ -27,37 +31,64 @@ $('#mapLegend').addEventListener('click', e => {
   mapShow[b.dataset.k] = !mapShow[b.dataset.k]; lsSet('gm-mapshow', JSON.stringify(mapShow)); renderMap(false);
 });
 const mapRecords = () => [...shownRecords('visit'), ...shownRecords('wish')].filter(r => r.lat != null && r.lng != null);
+const ll = (lat, lng) => [lng, lat];
+
+/* labels in Japanese only (the default style shows English + Japanese) */
+function japaneseLabels(map){
+  for (const layer of map.getStyle().layers || []) {
+    if (layer.type !== 'symbol') continue;
+    const tf = map.getLayoutProperty(layer.id, 'text-field');
+    if (!tf || JSON.stringify(tf).includes('"ref"')) continue;   // road numbers stay as they are
+    map.setLayoutProperty(layer.id, 'text-field', ['coalesce', ['get', 'name:ja'], ['get', 'name']]);
+  }
+}
+function useFallback(){
+  if (usingFallback || !mainMap) return;
+  usingFallback = true; mainMap.setStyle(GSI_STYLE);
+}
+function createMap(center, zoom){
+  mainMap = new maplibregl.Map({container:'mapBox', style:OFM_STYLE, center, zoom, minZoom:4, maxZoom:18,
+    attributionControl:{compact:true}, localIdeographFontFamily:'"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif', dragRotate:false, pitchWithRotate:false});
+  mainMap.touchZoomRotate.disableRotation();
+  const timer = setTimeout(() => { if (!mapReady) useFallback(); }, 9000);
+  mainMap.on('load', () => { mapReady = true; clearTimeout(timer); if (!usingFallback) try { japaneseLabels(mainMap); } catch {} });
+  mainMap.on('error', e => { if (!mapReady && e && e.error && /style|Failed to fetch|NetworkError|AJAXError/i.test(String(e.error.message || e.error))) useFallback(); });
+  mainMap.on('click', hideCard);
+}
 function renderMap(fit = true){
   renderLegend(); hideCard(); $('#mapResults').hidden = true; $('#mapQuery').value = '';
-  if (!hasLeaflet()) { $('#mapSub').hidden = false; $('#mapSub').textContent = '地図を読み込めませんでした。電波のある場所で開き直してください'; return; }
-  if (!mainMap) {
-    mainMap = L.map('mapBox', {zoomControl:false, attributionControl:true, minZoom:5, maxZoom:18}).setView(JAPAN, 5);
-    mainMap.attributionControl.setPrefix(false); mainMap.attributionControl.setPosition('bottomleft');
-    L.tileLayer(GSI_TILES, {attribution:GSI_ATTR, maxZoom:18, minZoom:5}).addTo(mainMap);
-    pinLayer = L.layerGroup().addTo(mainMap);
-    mainMap.on('click', hideCard);
-  }
-  setTimeout(() => mainMap.invalidateSize(), 30);
+  if (!hasML()) { $('#mapSub').hidden = false; $('#mapSub').textContent = '地図を読み込めませんでした。電波のある場所で開き直してください'; return; }
+  const start = PREF_CENTER[lastPref()] || JAPAN;
+  if (!mainMap) createMap(ll(start[0], start[1]), lastPref() ? 10 : 4.5);
+  setTimeout(() => mainMap.resize(), 30);
   const pts = drawPins();
   const sub = $('#mapSub');
   sub.hidden = pts.length > 0;
   sub.textContent = gReady() ? '地図に出せる記録がまだありません。店名からGoogleマップで場所を探して、自動でピンを立てます。' : '地図に出せる記録がまだありません。';
   if (fit) {
-    if (pts.length === 1) mainMap.setView(pts[0], 15);
-    else if (pts.length) mainMap.fitBounds(pts, {padding:[60, 40], maxZoom:15});
-    else mainMap.setView(PREF_CENTER[lastPref()] || JAPAN, lastPref() ? 10 : 5);
+    if (pts.length === 1) mainMap.jumpTo({center:pts[0], zoom:15});
+    else if (pts.length) {
+      const b = new maplibregl.LngLatBounds(pts[0], pts[0]); pts.forEach(p => b.extend(p));
+      mainMap.fitBounds(b, {padding:{top:150, bottom:60, left:40, right:40}, maxZoom:15, duration:0});
+    } else mainMap.jumpTo({center:ll(start[0], start[1]), zoom:lastPref() ? 10 : 4.5});
   }
   // records without a position: look them up on Google and add their pins as they come in
   autoPlace([...catRecords('visit'), ...catRecords('wish')], () => { if (view === 'map') { const p = drawPins(); if (p.length) $('#mapSub').hidden = true; } });
 }
+function pinEl(color){
+  const el = document.createElement('div'); el.className = 'gpin';
+  el.innerHTML = `<svg width="30" height="42" viewBox="0 0 28 40" aria-hidden="true"><path d="M14 0C6.3 0 0 6.2 0 13.9 0 24.3 14 40 14 40s14-15.7 14-26.1C28 6.2 21.7 0 14 0z" fill="${color}" stroke="rgba(0,0,0,.25)" stroke-width="1"/><circle cx="14" cy="14" r="5.2" fill="#fff" fill-opacity=".92"/></svg>`;
+  return el;
+}
 function drawPins(){
-  pinLayer.clearLayers();
+  pinMarkers.forEach(m => m.remove()); pinMarkers = [];
   const pts = [];
   for (const r of mapRecords()) {
     const k = mapKind(r); if (!mapShow[k]) continue;
-    const m = L.marker([r.lat, r.lng], {icon:pinIcon(colors[k]), title:r.shop});
-    m.on('click', ev => { L.DomEvent.stopPropagation(ev); showCard(r); });
-    m.addTo(pinLayer); pts.push([r.lat, r.lng]);
+    const el = pinEl(colors[k]); el.title = r.shop;
+    el.addEventListener('click', ev => { ev.stopPropagation(); showCard(r); });
+    pinMarkers.push(new maplibregl.Marker({element:el, anchor:'bottom'}).setLngLat(ll(r.lat, r.lng)).addTo(mainMap));
+    pts.push(ll(r.lat, r.lng));
   }
   return pts;
 }
@@ -81,11 +112,11 @@ function showCard(r){
     if (r.list === 'wish') { if (r.sample) toast('見本です'); else openWish(records.find(x => x.id === r.id) || r); }
     else openDetail(r.id);
   };
-  mainMap && mainMap.panTo([r.lat, r.lng]);
+  mainMap && mainMap.easeTo({center:ll(r.lat, r.lng), offset:[0, -60]});
 }
 function hideCard(){ cardRec = null; $('#mapCard').hidden = true; $('#mapLocate').style.bottom = ''; }
 function focusOnMap(r){
-  setTimeout(() => { if (!mainMap) return; mainMap.setView([r.lat, r.lng], 16); showCard(r); }, 120);
+  setTimeout(() => { if (!mainMap) return; mainMap.jumpTo({center:ll(r.lat, r.lng), zoom:16}); showCard(r); }, 120);
 }
 $('#mapClose').addEventListener('click', () => setView(lastListView || 'all'));
 $('#mapQuery').addEventListener('input', () => {
@@ -102,7 +133,7 @@ $('#mapResults').addEventListener('click', e => {
   if (!r) return;
   if (r.lat == null) { toast('この記録は場所がわからないため、地図に出せません'); return; }
   const k = mapKind(r); if (!mapShow[k]) { mapShow[k] = true; renderMap(false); }
-  mainMap.setView([r.lat, r.lng], 16); showCard(r);
+  mainMap.jumpTo({center:ll(r.lat, r.lng), zoom:16}); showCard(r);
 });
 let hereMarker = null;
 $('#mapLocate').addEventListener('click', () => {
@@ -111,8 +142,9 @@ $('#mapLocate').addEventListener('click', () => {
     if (!p) { toast('現在地を取得できませんでした。位置情報の許可を確認してください'); return; }
     if (!mainMap) return;
     if (hereMarker) hereMarker.remove();
-    hereMarker = L.circleMarker([p.lat, p.lng], {radius:8, color:'#fff', weight:3, fillColor:'#1a73e8', fillOpacity:1}).addTo(mainMap);
-    mainMap.setView([p.lat, p.lng], 15);
+    const el = document.createElement('div'); el.className = 'hereDot';
+    hereMarker = new maplibregl.Marker({element:el}).setLngLat(ll(p.lat, p.lng)).addTo(mainMap);
+    mainMap.easeTo({center:ll(p.lat, p.lng), zoom:15});
   });
 });
 
