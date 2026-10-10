@@ -69,6 +69,8 @@ button{cursor:pointer;-webkit-user-select:none;user-select:none}
 .sel-top{width:min(100%,520px);display:flex;justify-content:flex-end;align-items:center;gap:10px}
 .sel-add{width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.25);color:var(--stage-text);display:flex;align-items:center;justify-content:center;padding:0}
 .sel-add svg{width:18px;height:18px}
+.tile{position:relative}
+.tdel{position:absolute;top:-8px;left:-8px;z-index:3;width:30px;height:30px;border-radius:50%;background:#E53935;color:#fff;font-size:18px;font-weight:700;line-height:30px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.5)}
 .bgprev{position:relative;aspect-ratio:9/12;width:min(60%,240px);margin:0 auto;border-radius:16px;overflow:hidden;background:#0B0B0C}
 .bgprev img,.bgprev video{position:absolute;inset:-8%;width:116%;height:116%;object-fit:cover}
 .bgprev .wm{position:absolute;left:0;right:0;top:14%;text-align:center;font-size:34px}
@@ -109,6 +111,23 @@ button{cursor:pointer;-webkit-user-select:none;user-select:none}
 .vtitle{font-family:var(--f-display);font-weight:var(--dw);font-size:26px;line-height:1.1;margin:0}
 .vsub{margin:6px 0 0;color:var(--muted);font-size:13px}
 .topbtns{display:flex;gap:8px;align-items:center;flex:none}
+.pill.icon{padding:0;width:42px;justify-content:center}
+.pill.icon svg{width:20px;height:20px}
+.tcount{font-family:var(--f-body);font-size:15px;font-weight:700;color:var(--muted);margin-left:8px;vertical-align:middle}
+.dchips{display:flex;gap:8px;overflow-x:auto;padding:12px 0 2px;scrollbar-width:none}
+.dchips::-webkit-scrollbar{display:none}
+.dchips button{flex:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:7px 14px;font-size:14px;font-weight:700}
+.dchips button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.dgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin:12px -16px 0}
+.dtile{position:relative;aspect-ratio:3/4;border:0;padding:0;background:var(--surface);overflow:hidden;display:block}
+.dtile img,.dtile video{width:100%;height:100%;object-fit:cover;display:block}
+.dtile .dvid{position:absolute;top:6px;right:7px;color:#fff;font-size:12px;text-shadow:0 1px 4px rgba(0,0,0,.7)}
+.dtile .dbadge{position:absolute;left:6px;bottom:6px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.dtile .dbadge.wish{left:auto;right:6px;top:6px;bottom:auto}
+.dtile .dtext{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:8px;text-align:left;color:var(--ink);background:linear-gradient(160deg,var(--surface),var(--bg))}
+.dtile .dtext b{font-size:13px;line-height:1.3}
+.dtile .dtext small{font-size:11px;color:var(--muted)}
+.sbig{margin-top:12px}
 .pill{display:flex;align-items:center;gap:4px;height:42px;padding:0 14px;border:1px solid var(--line);background:var(--surface);border-radius:999px;color:var(--ink);font-weight:700;font-size:13px;white-space:nowrap}
 .pill svg{width:18px;height:18px}
 .gear{border:1px solid var(--line);background:var(--surface);border-radius:999px;width:42px;height:42px;display:flex;align-items:center;justify-content:center;flex:none}
@@ -195,6 +214,37 @@ button{cursor:pointer;-webkit-user-select:none;user-select:none}
 .stars .fill svg{color:var(--gold)}
 
 /* map */
+.mapfull:not([hidden]){position:fixed;inset:0;z-index:20;background:#EAE7E1}
+.mapfull #mapBox{position:absolute;inset:0}
+.mtop{position:absolute;left:0;right:0;top:0;z-index:500;padding:calc(var(--sat) + 10px) 12px 0;pointer-events:none}
+.mtop>*{pointer-events:auto}
+.msearch{display:flex;align-items:center;gap:4px;background:#fff;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.22);padding:4px 14px 4px 4px;max-width:640px;margin:0 auto}
+.msearch input{flex:1;min-width:0;border:0;background:none;font-size:16px;padding:10px 4px;color:#202124;outline:none}
+.mbtn{width:40px;height:40px;border-radius:50%;border:0;background:none;color:#3c4043;display:flex;align-items:center;justify-content:center;padding:0}
+.mbtn svg{width:22px;height:22px}
+.mchips{display:flex;gap:8px;overflow-x:auto;padding:10px 0 4px;max-width:640px;margin:0 auto;scrollbar-width:none}
+.mchips::-webkit-scrollbar{display:none}
+.mchips button{flex:none;display:flex;align-items:center;gap:6px;border:0;background:#fff;color:#3c4043;border-radius:999px;padding:7px 14px;font-size:14px;font-weight:500;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.mchips button[aria-pressed="false"]{background:#f1f3f4;color:#80868b;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.mchips i{width:10px;height:10px;border-radius:50%;display:block}
+.mchips button[aria-pressed="false"] i{opacity:.35}
+.mresults{background:#fff;border-radius:16px;box-shadow:0 2px 10px rgba(0,0,0,.2);max-width:640px;margin:6px auto 0;overflow:hidden;max-height:50vh;overflow-y:auto}
+.mresults button{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid #eee;background:#fff;color:#202124;padding:12px 16px;font-size:15px}
+.mresults button span{display:block;font-size:12px;color:#70757a}
+.msub{max-width:640px;margin:6px auto 0;background:rgba(255,255,255,.95);color:#3c4043;border-radius:12px;padding:8px 12px;font-size:13px;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.mlocate{position:absolute;right:14px;bottom:calc(var(--sab) + 28px);z-index:500;width:52px;height:52px;border-radius:50%;border:0;background:#fff;color:#1a73e8;box-shadow:0 2px 8px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center}
+.mlocate svg{width:24px;height:24px}
+.mcard{position:absolute;left:10px;right:10px;bottom:calc(var(--sab) + 12px);z-index:510;max-width:620px;margin:0 auto;background:#fff;color:#202124;border-radius:18px;box-shadow:0 4px 18px rgba(0,0,0,.28);padding:12px;display:grid;grid-template-columns:84px 1fr;gap:12px;align-items:center}
+.mcard[hidden]{display:none}
+.mcard img,.mcard .noimg{width:84px;height:84px;border-radius:12px;object-fit:cover;background:#eee;display:block}
+.mcard h3{margin:0;font-size:17px;line-height:1.3}
+.mcard .mmeta{font-size:13px;color:#70757a;margin-top:2px}
+.mcard .mrow{display:flex;gap:8px;margin-top:8px}
+.mcard .mrow a,.mcard .mrow button{border:1px solid #dadce0;background:#fff;color:#1a73e8;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700;text-decoration:none}
+.mcard .mrow .pri{background:#1a73e8;color:#fff;border-color:#1a73e8}
+.mcard .mx{position:absolute;top:6px;right:6px;width:30px;height:30px;border:0;background:none;color:#5f6368;font-size:18px}
+.gpin svg{display:block;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))}
+.mapfull .leaflet-control-attribution{font-size:9px}
 .mapwrap{position:relative;margin-top:14px;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);height:calc(100vh - 290px);height:calc(100dvh - 290px);min-height:320px;background:var(--surface)}
 #mapBox,#locMap{position:absolute;inset:0}
 .legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
@@ -214,7 +264,7 @@ button{cursor:pointer;-webkit-user-select:none;user-select:none}
 .fab{position:fixed;right:16px;bottom:calc(var(--tabbar) + var(--sab) + 14px);z-index:6;display:flex;align-items:center;gap:8px;border:0;background:var(--ink);color:var(--bg);border-radius:999px;padding:14px 20px 14px 16px;font-weight:700;font-size:15px;box-shadow:0 6px 18px rgba(0,0,0,.22)}
 .fab svg{width:22px;height:22px}
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:7;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--bar);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-top:1px solid var(--line);padding-bottom:var(--sab)}
-.tabbar button{height:var(--tabbar);border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10.5px;font-weight:700;color:var(--muted);white-space:nowrap;min-width:0}
+.tabbar button{height:var(--tabbar);border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10px;letter-spacing:-.04em;font-weight:700;color:var(--muted);white-space:nowrap;min-width:0;overflow:hidden}
 .tabbar svg{width:24px;height:24px}
 .tabbar button[aria-current="page"]{color:var(--ink)}
 .tabbar button[aria-current="page"] svg{color:var(--yolk)}
@@ -241,7 +291,9 @@ button{cursor:pointer;-webkit-user-select:none;user-select:none}
 /* sheets */
 .sheet{position:fixed;inset:0;z-index:50;background:var(--bg);color:var(--ink);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .sheet-in{max-width:640px;margin:0 auto;padding-inline:16px;padding-top:var(--sat);padding-bottom:calc(var(--sab) + 40px)}
-.bar{position:sticky;top:0;z-index:600;display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--bg);padding:10px 0}
+.bar{position:sticky;top:0;z-index:600;display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--bg);margin-top:calc(-1 * var(--sat));padding:calc(var(--sat) + 10px) 0 10px;box-shadow:0 -40px 0 var(--bg)}
+.sheet.instant:not([hidden]){animation:none!important}
+body:has(#view-map:not([hidden])) .toast{top:calc(var(--sat) + 116px)}
 .bar h2{font-family:var(--f-display);font-weight:var(--dw);font-size:19px;margin:0;text-align:center;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .iconbtn{border:0;background:transparent;padding:8px;margin-left:-8px;border-radius:999px;display:flex}
 .iconbtn svg{width:24px;height:24px}
@@ -320,6 +372,18 @@ button{cursor:pointer;-webkit-user-select:none;user-select:none}
 .dbtn{display:flex;align-items:center;justify-content:center;gap:6px;padding:11px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-weight:700;font-size:14px;text-decoration:none}
 .dbtn svg{width:18px;height:18px;flex:none}
 .dbtn.accent{background:var(--yolk);border-color:var(--yolk);color:#fff}
+.hours{margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.hrow{display:flex;align-items:center;gap:12px;width:100%;border:0;background:none;color:var(--ink);text-align:left;padding:12px 14px;font-size:15px}
+.hico{width:36px;height:36px;border-radius:10px;background:var(--bg);display:flex;align-items:center;justify-content:center;flex:none;color:var(--muted)}
+.hico svg{width:20px;height:20px}
+.hstate{flex:1;font-weight:700}
+.hstate.on{color:#1E8E3E}.hstate.off{color:#D93025}.hstate.muted{color:var(--muted);font-weight:500;font-size:13px}
+.hchev{color:var(--muted);font-size:18px;transition:transform .2s}
+.hrow[aria-expanded="true"] .hchev{transform:rotate(180deg)}
+.hlist{padding:0 14px 12px 62px}
+.hday{display:flex;justify-content:space-between;gap:12px;padding:5px 0;font-size:14px;color:var(--muted)}
+.hday.today{color:var(--ink);font-weight:700}
+.hsrc{margin:8px 0 0;font-size:11px;color:var(--muted)}
 .dl{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin:18px 0 0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
 .dl dt{font-size:12px;color:var(--muted);letter-spacing:.08em;padding-top:2px}
 .dl dd{margin:0;min-width:0;overflow-wrap:anywhere}
@@ -332,6 +396,23 @@ button{cursor:pointer;-webkit-user-select:none;user-select:none}
 .strip{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin-inline:-16px;padding-inline:16px}
 .strip::-webkit-scrollbar{display:none}
 .strip img{flex:none;width:68%;max-width:none;aspect-ratio:4/3;object-fit:cover;border-radius:12px}
+/* photos / videos on the detail page: always fill the width (1 → full, 2 → halves, 3+ → thirds) */
+.mgrid{display:grid;gap:3px;border-radius:14px;overflow:hidden}
+.mgrid.n1{grid-template-columns:1fr}.mgrid.n2{grid-template-columns:1fr 1fr}.mgrid.n3{grid-template-columns:1fr 1fr 1fr}
+.mgrid>*{display:block;width:100%;max-width:none;object-fit:cover;border:0;padding:0;border-radius:0;background:#000}
+.mgrid.p img{aspect-ratio:1/1}.mgrid.p.n1 img{aspect-ratio:4/3}
+.mgrid.v button{aspect-ratio:9/16;overflow:hidden}.mgrid.v.n1 button{aspect-ratio:4/5}
+.mgrid.v video{width:100%;height:100%;object-fit:cover;display:block}
+/* 4 or more: rows of 3; a short last row stretches so there is never an empty hole */
+.mgrid.many{grid-template-columns:repeat(6,1fr)}
+.mgrid.many>*{grid-column:span 2}
+.mgrid.many>:last-child:nth-child(3n+1){grid-column:span 6}
+.mgrid.many>:nth-last-child(2):nth-child(3n+1),.mgrid.many>:last-child:nth-child(3n+2){grid-column:span 3}
+.mgrid.p.many img{aspect-ratio:1/1}
+.mgrid.p.n2 img,.mgrid.p.many>:nth-last-child(2):nth-child(3n+1),.mgrid.p.many>:last-child:nth-child(3n+2){aspect-ratio:3/2}
+.mgrid.p.many>:last-child:nth-child(3n+1){aspect-ratio:3/1}
+.mgrid.v.n2 button,.mgrid.v.many>:nth-last-child(2):nth-child(3n+1),.mgrid.v.many>:last-child:nth-child(3n+2){aspect-ratio:27/32}
+.mgrid.v.many>:last-child:nth-child(3n+1){aspect-ratio:27/16}
 .mood{margin:8px 0 0;font-family:var(--f-display);font-size:15px}
 .menugrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .menugrid img{width:100%;aspect-ratio:3/4;max-width:100%;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
@@ -397,17 +478,31 @@ button{cursor:pointer;-webkit-user-select:none;user-select:none}
 .act-in button.cancel{background:none;border:0;color:var(--muted)}
 
 .viewer{position:fixed;inset:0;z-index:75;background:rgba(10,8,6,.94);display:flex;align-items:center;justify-content:center;padding:calc(var(--sat) + 16px) 8px calc(var(--sab) + 40px)}
-.viewer img{max-width:100%;max-height:100%;object-fit:contain}
+.viewer img,.viewer video{max-width:100%;max-height:100%;object-fit:contain}
+.act-in h4{white-space:pre-line}
+.viewer-close{position:absolute;top:calc(var(--sat) + 10px);right:12px;width:40px;height:40px;border-radius:50%;border:0;background:rgba(255,255,255,.15);color:#fff;font-size:18px}
+.shot .play,.vstrip .play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;text-shadow:0 1px 6px rgba(0,0,0,.6);pointer-events:none}
+.vstrip{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
+.vstrip::-webkit-scrollbar{display:none}
+.vstrip button{position:relative;flex:none;width:58%;max-width:240px;aspect-ratio:9/16;border:0;padding:0;border-radius:14px;overflow:hidden;background:#000}
+.vstrip video,.vstrip img{width:100%;height:100%;object-fit:cover;display:block}
 .viewer-x{position:absolute;left:0;right:0;bottom:calc(var(--sab) + 12px);text-align:center;color:rgba(255,255,255,.6);font-size:12px}
 .toast{position:fixed;left:50%;top:calc(var(--sat) + 12px);transform:translateX(-50%);z-index:80;background:var(--ink);color:var(--bg);padding:9px 18px;border-radius:999px;font-size:14px;font-weight:500;max-width:calc(100% - 32px);text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.2)}
-.linkrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.lbtn{border:0;border-radius:8px;padding:7px 11px;background:var(--c,#333);color:var(--t,#fff);font-weight:700;font-size:12.5px;line-height:1.1;letter-spacing:.02em;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
-.lbtn::after{content:"↗";opacity:.7;font-size:11px}
-.lbtn.tt{box-shadow:inset 3px 0 0 #25F4EE,inset -3px 0 0 #FE2C55}
-.lbtn.ig{background:linear-gradient(45deg,#F58529,#DD2A7B 55%,#8134AF)}
+.linkrow{display:flex;flex-wrap:wrap;gap:12px 10px;margin-top:12px}
+.lbtn{border:0;background:none;padding:0;width:62px;display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--ink)}
+.lico{width:56px;height:56px;border-radius:13px;background:var(--c,#333);color:var(--t,#fff);display:flex;align-items:center;justify-content:center;text-align:center;font-weight:800;line-height:1.05;letter-spacing:-.01em;box-shadow:0 2px 6px rgba(0,0,0,.18),inset 0 0 0 1px rgba(255,255,255,.06);overflow:hidden;padding:4px}
+.lname{font-size:11px;line-height:1.2;color:var(--muted);max-width:62px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lbtn:active .lico{transform:scale(.94)}
+.lico{position:relative}
+.lico img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit}
+.lbtn .lico.img{color:transparent;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.18)}
+.lbtn.tt .lico{box-shadow:inset 3px 0 0 #25F4EE,inset -3px 0 0 #FE2C55,0 2px 6px rgba(0,0,0,.18)}
+.lbtn.ig .lico{background:linear-gradient(45deg,#F58529,#DD2A7B 55%,#8134AF);color:#fff}
 .llist{display:flex;flex-direction:column;gap:6px}
 .lrow{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
-.lrow .lbtn{pointer-events:none}
+.lrow .lbtn{pointer-events:none;width:auto}
+.lrow .lico{width:40px;height:40px;border-radius:10px;transform:scale(.85);transform-origin:left center}
+.lrow .lname{display:none}
 .lrow .lurl{flex:1;min-width:0;font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lrow button.ctl{border:0;background:none;color:var(--muted);font-size:15px;padding:4px 6px}
 .stream{margin-top:18px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
@@ -462,9 +557,10 @@ button{cursor:pointer;-webkit-user-select:none;user-select:none}
   <div class="wrap">
     <section id="view-all" class="view">
       <header class="top">
-        <h1 class="brand"><span class="eyebrow">Stash</span><span id="catTitle">居酒屋</span></h1>
+        <h1 class="brand"><span class="eyebrow">Stash</span><span id="catTitle">居酒屋</span><span class="tcount" id="catCount"></span></h1>
         <div class="topbtns">
           <button class="pill" type="button" id="switchBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg><span id="switchLabel">切替</span></button>
+          <button class="pill icon" type="button" id="homeBtn" aria-label="ジャンル一覧（ホーム）へ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg></button>
           <button class="gear" type="button" id="moreBtn" aria-label="設定とバックアップ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
         </div>
       </header>
@@ -475,11 +571,6 @@ button{cursor:pointer;-webkit-user-select:none;user-select:none}
         <div class="hero-cap" id="heroCap"></div>
         <button class="hero-edit" id="heroEdit" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/></svg>写真を変える</button>
       </div>
-      <section class="stats" aria-label="記録のまとめ">
-        <div class="stat"><b id="sCount">0</b><span id="sUnit">軒</span></div>
-        <div class="stat"><b id="sAvg">-</b><span>平均★</span></div>
-        <div class="stat"><b id="sMonth">0</b><span>今月</span></div>
-      </section>
       <div class="install" id="installTip" hidden>
         <span><b>アプリとして使うには</b><br>共有ボタン（□に↑）→「ホーム画面に追加」。次からはホーム画面のアイコンから開いてください。</span>
         <button class="linkbtn" type="button" id="installClose" style="color:#B9C0B7;margin-left:auto;flex:none">閉じる</button>
@@ -516,11 +607,29 @@ button{cursor:pointer;-webkit-user-select:none;user-select:none}
       <div class="list" id="wishList"></div>
     </section>
 
-    <section id="view-map" class="view" hidden>
-      <header class="top"><div><h1 class="vtitle">地図</h1><p class="vsub" id="mapSub"></p></div></header>
-      <div class="legend" id="mapLegend"></div>
-      <div class="mapwrap"><div id="mapBox"></div></div>
-      <p class="mapnote">地図：<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">地理院タイル</a>（国土地理院）にピンを追加して表示。地図の表示にはネット接続が必要です。</p>
+    <section id="view-map" class="view mapfull" hidden>
+      <div id="mapBox"></div>
+      <div class="mtop">
+        <div class="msearch">
+          <button class="mbtn" type="button" id="mapClose" aria-label="地図を閉じる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <input id="mapQuery" type="search" placeholder="記録を検索" aria-label="記録を検索" autocomplete="off" enterkeyhint="search">
+        </div>
+        <div class="mchips" id="mapLegend"></div>
+        <div class="mresults" id="mapResults" hidden></div>
+        <p class="msub" id="mapSub" hidden></p>
+      </div>
+      <button class="mlocate" type="button" id="mapLocate" aria-label="現在地を表示"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
+      <div class="mcard" id="mapCard" hidden></div>
+    </section>
+
+    <section id="view-search" class="view" hidden>
+      <header class="top"><div><h1 class="vtitle">検索</h1></div></header>
+      <div class="search sbig">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="sq" type="search" placeholder="名前・メニュー・特徴・メモで探す" aria-label="記録を検索" autocomplete="off" enterkeyhint="search">
+      </div>
+      <div class="dchips" id="dChips"></div>
+      <div class="dgrid" id="dGrid"></div>
     </section>
 
     <section id="view-types" class="view" hidden>
@@ -605,6 +714,16 @@ button{cursor:pointer;-webkit-user-select:none;user-select:none}
         <div class="pbtns" data-shots="gallery"></div>
       </div>
 
+      <div data-need="video">
+        <span class="flabel">動画</span>
+        <div class="shots" id="videoShots"></div>
+        <div class="pbtns">
+          <button class="btn" type="button" id="vidCam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3z"/></svg>動画を撮る</button>
+          <button class="btn" type="button" id="vidLib"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>写真フォルダ</button>
+        </div>
+        <p class="hint">1本50MBまで（30秒くらいがおすすめ）。詳細では音なしでくり返し再生、タップで大きく・音ありで見られます。</p>
+      </div>
+
       <div data-need="price">
         <div class="two">
           <div class="field"><label for="fTotal">合計金額</label><div class="yen-in"><input id="fTotal" type="number" inputmode="numeric" min="0" step="100" placeholder="12000"><span>円</span></div></div>
@@ -622,7 +741,7 @@ button{cursor:pointer;-webkit-user-select:none;user-select:none}
           <div class="field"><label for="fPref">都道府県</label><select id="fPref"></select></div>
           <div class="field"><label for="fPlace">場所・店舗</label><input id="fPlace" autocomplete="off" placeholder="例：名古屋駅店"></div>
         </div>
-        <div class="locbox" id="fLocBox"><i class="dot"></i><span id="fLocText">地図の位置：未設定</span><button class="btn small" type="button" id="fLocBtn">地図で設定</button></div>
+        <div class="locbox" id="fLocBox" style="display:none"><i class="dot"></i><span id="fLocText">地図の位置：未設定</span><button class="btn small" type="button" id="fLocBtn">地図で設定</button></div>
         <a class="maplink" id="fMap" href="#" target="_blank" rel="noopener" hidden></a>
       </div>
       <label class="toggle" for="fNomi" data-need="nomi"><span><b>飲み放題あり</b></span><input id="fNomi" type="checkbox"></label>
@@ -659,7 +778,7 @@ button{cursor:pointer;-webkit-user-select:none;user-select:none}
           <div class="field"><label for="wPref">都道府県</label><select id="wPref"></select></div>
           <div class="field"><label for="wPlace">場所・店舗</label><input id="wPlace" autocomplete="off"></div>
         </div>
-        <div class="locbox" id="wLocBox"><i class="dot"></i><span id="wLocText">地図の位置：未設定</span><button class="btn small" type="button" id="wLocBtn">地図で設定</button></div>
+        <div class="locbox" id="wLocBox" style="display:none"><i class="dot"></i><span id="wLocText">地図の位置：未設定</span><button class="btn small" type="button" id="wLocBtn">地図で設定</button></div>
         <a class="maplink" id="wMap" href="#" target="_blank" rel="noopener" hidden></a>
       </div>
       <div class="field"><label for="wMenu" id="wMenuLabel">気になるメニュー</label><input id="wMenu" autocomplete="off"></div>
@@ -679,7 +798,7 @@ button{cursor:pointer;-webkit-user-select:none;user-select:none}
   <div class="sheet-in">
     <div class="bar">
       <button class="iconbtn" type="button" data-close aria-label="戻る"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></button>
-      <span></span>
+      <button class="btn primary" type="button" id="dEditTop">編集</button>
     </div>
     <div id="detailBody"></div>
   </div>
@@ -707,7 +826,7 @@ button{cursor:pointer;-webkit-user-select:none;user-select:none}
       </div>
       <div class="row"><button class="linkbtn" type="button" id="cReset">最初の色に戻す</button></div>
     </div>
-    <div class="panel">
+    <div class="panel" style="display:none">
       <h3>共有コードで追加</h3>
       <p>シェアされた「共有コード」を貼り付けると、行ってみたいに追加できます。</p>
       <div class="field" style="margin-top:10px"><textarea id="importCode" placeholder="ここに貼り付け" style="min-height:70px" aria-label="共有コード"></textarea></div>
@@ -715,10 +834,13 @@ button{cursor:pointer;-webkit-user-select:none;user-select:none}
     </div>
     <div class="panel">
       <h3>バックアップ</h3>
-      <p>記録と写真はこのiPhoneの中に保存されます。機種変更やアプリを消す前に書き出して「ファイルに保存」してください。全ジャンルまとめて書き出します。</p>
+      <p>記録・写真・動画はこのiPhoneの中に保存されます。機種変更やアプリを消す前に書き出して「ファイルに保存」（iCloud Drive がおすすめ）してください。全ジャンルまとめて書き出します。</p>
       <p class="note" id="backupNudge" hidden></p>
       <div class="row">
         <button class="btn primary" id="exportBtn" type="button">記録を書き出す</button>
+        <button class="btn" id="exportVidBtn" type="button">動画も含めて書き出す</button>
+      </div>
+      <div class="row">
         <button class="btn" id="importBtn" type="button">ファイルから戻す</button>
         <input id="importFile" type="file" accept="application/json,.json" hidden>
       </div>
@@ -896,13 +1018,15 @@ button{cursor:pointer;-webkit-user-select:none;user-select:none}
 </div>
 
 <div class="act" id="act" hidden><div class="act-in" id="actIn"></div></div>
-<div class="viewer" id="viewer" hidden role="dialog" aria-label="写真を大きく表示"><img id="viewerImg" alt=""><span class="viewer-x">タップで閉じる</span></div>
+<div class="viewer" id="viewer" hidden role="dialog" aria-label="写真・動画を大きく表示"><img id="viewerImg" alt=""><video id="viewerVid" controls playsinline hidden></video><button type="button" class="viewer-close" id="viewerClose" aria-label="閉じる">✕</button><span class="viewer-x" id="viewerHint">タップで閉じる</span></div>
 <div class="toast" id="toast" hidden role="status"></div>
 
 <input id="pickCam" type="file" accept="image/*" capture="environment" hidden>
 <input id="pickLib" type="file" accept="image/*" hidden>
 <input id="pickLibMulti" type="file" accept="image/*" multiple hidden>
 <input id="pickVid" type="file" accept="video/*" hidden>
+<input id="pickVidCam" type="file" accept="video/*" capture="environment" hidden>
+<input id="pickVidLib" type="file" accept="video/*" multiple hidden>
 
 <script src="vendor/leaflet.js"></script>
 <script src="js/config.js"></script>
@@ -910,6 +1034,9 @@ button{cursor:pointer;-webkit-user-select:none;user-select:none}
 <script src="js/form.js"></script>
 <script src="js/detail.js"></script>
 <script src="js/links.js"></script>
+<script src="js/google.js"></script>
+<script src="js/video.js"></script>
+<script src="js/search.js"></script>
 <script src="js/map.js"></script>
 <script src="js/views.js"></script>
 <script src="js/main.js"></script>

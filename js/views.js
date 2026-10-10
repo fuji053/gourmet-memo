@@ -79,10 +79,8 @@ function wishHTML(arr){
 
 /* ---------- renders ---------- */
 function renderStats(){
-  const arr = shownRecords('visit'), rated = arr.filter(e => e.rating > 0), m = today().slice(0,7);
-  $('#sCount').textContent = arr.length; $('#sUnit').textContent = T().unit;
-  $('#sAvg').textContent = rated.length ? (rated.reduce((a,e)=>a+e.rating,0)/rated.length).toFixed(1) : '-';
-  $('#sMonth').textContent = arr.filter(e => (e.date||'').startsWith(m)).length;
+  // just the number of memos next to the genre name (見本 are not counted)
+  $('#catCount').textContent = `${catRecords('visit').length}${T().unit}`;
 }
 function renderAllView(){
   const t = T(), q = query.toLowerCase();
@@ -146,6 +144,7 @@ function renderAll(){
   if ($('#app').hidden) return;
   renderStats(); renderAllView(); renderAgain(); renderWish(); renderTypes(); renderNudge();
   if (view === 'map') renderMap(false);
+  if (view === 'search') renderSearch();
 }
 
 /* ---------- tab bar & pages ---------- */
@@ -155,17 +154,21 @@ const TAB_ICONS = {
   wish:'<path d="M5 21V4"/><path d="M5 4h12l-2.5 4L17 12H5"/>',
   map:'<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>',
   types:'<path d="M4 5h7v7H4zM13 5h7v7h-7zM4 14h7v6H4zM13 14h7v6h-7z"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
 };
 function renderTabbar(){
   const t = T();
   const tabs = [['all','すべて'],['again',t.again],['wish',t.wish]];
   if (t.shop) tabs.push(['map','地図']);
+  tabs.push(['search','検索']);
   tabs.push(['types', t.tags]);
   $('#tabbar').innerHTML = tabs.map(([k,l]) => `<button type="button" data-view="${k}"${k === view ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">${TAB_ICONS[k]}</svg>${esc(l)}</button>`).join('');
 }
 $('#tabbar').addEventListener('click', e => { const b = e.target.closest('[data-view]'); if (b) setView(b.dataset.view); });
+let lastListView = 'all';
 function setView(v){
   if (v === 'map' && !T().shop) v = 'all';
+  if (v !== 'map') lastListView = v;
   view = v;
   document.querySelectorAll('#app .view').forEach(s => s.hidden = s.id !== 'view-' + v);
   document.querySelectorAll('#tabbar button').forEach(b => { if (b.dataset.view === v) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
@@ -174,6 +177,7 @@ function setView(v){
   if (v !== 'types' && typeEdit) { typeEdit = false; armedType = null; renderTypes(); }
   window.scrollTo(0, 0);
   if (v === 'map') renderMap(true);
+  if (v === 'search') renderSearch();
 }
 
 /* ---------- tags tab: select / add / delete ---------- */
@@ -213,7 +217,7 @@ document.addEventListener('click', e => {
   if (w) { const item = shownRecords('wish').find(x => x.id === w.dataset.wid); if (!item) return; if (item.sample) { toast('見本です。右下から追加できます'); return; } openWish(item); }
 });
 document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('wish')) { e.preventDefault(); e.target.click(); } });
-$('#fab').addEventListener('click', () => { if (view === 'wish') openWish(null); else openEdit(null, {camera:true}); });
+$('#fab').addEventListener('click', () => { if (view === 'wish') openWish(null); else openEdit(null); });
 $('#q').addEventListener('input', e => { query = e.target.value.trim(); renderAllView(); });
 $('#q').addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });
 $('#sort').addEventListener('change', e => { sortBy = e.target.value; lsSet('gm-sort', sortBy); renderAllView(); });
@@ -271,6 +275,7 @@ $('#switchBtn').addEventListener('click', () => {
 });
 $('#switchList').addEventListener('click', e => { const b = e.target.closest('[data-cid]'); if (!b) return; hide($('#switchSheet')); enterCat(b.dataset.cid); });
 $('#switchHome').addEventListener('click', () => { hide($('#switchSheet')); goHome(); });
+$('#homeBtn').addEventListener('click', () => goHome());
 function coverThumb(c){ const src = c.cover || c.tile; return src ? `<img src="${src}" alt="">` : `<span class="ph-empty">${esc(c.name.slice(0,1))}</span>`; }
 
 function enterCat(id, startView){
@@ -283,6 +288,7 @@ function enterCat(id, startView){
   $('#catTitle').textContent = c.name;
   $('#sortPrice').hidden = !T().price; if (!T().price && sortBy === 'price') { sortBy = 'date'; $('#sort').value = 'date'; }
   $('#q').value = ''; query = ''; typeSel = 'all'; typeEdit = false;
+  $('#sq').value = ''; dQuery = ''; dTab = 'pick';
   view = startView || 'all';
   renderTabbar(); renderSwitchLabel(); applyHero(); setView(view); renderAll();
   const tip = $('#installTip'); tip.hidden = isStandalone() || lsGet('gm-tip') === 'off';
@@ -301,10 +307,21 @@ $('#editCatBtn').addEventListener('click', () => openCatSheet(cur));
 $('#toHomeBtn').addEventListener('click', () => { hide($('#moreSheet')); goHome(); });
 
 /* backup: every genre in one file; also reads files from the older 居酒屋メモ / 喫茶 pages */
-$('#exportBtn').addEventListener('click', async () => {
+const blobToDataURL = b => new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(b); });
+async function dataURLtoBlob(u){ return (await fetch(u)).blob(); }
+async function doExport(withVideos){
   if (!records.length) { toast('まだ記録がありません'); return; }
-  const name = `gurumemo-${today()}.json`;
-  const json = JSON.stringify({app:'gurumemo', version:2, exportedAt:new Date().toISOString(), cats, colors, records});
+  let list = records;
+  if (withVideos) {
+    const total = records.reduce((a, r) => a + (r.videos || []).reduce((b, v) => b + (v.blob ? v.blob.size : 0), 0), 0);
+    if (!total) { toast('動画の入った記録がありません。「記録を書き出す」で大丈夫です'); return; }
+    if (total > 400 * 1048576) { toast(`動画が大きすぎて1つのファイルにできません（${Math.round(total / 1048576)}MB）`); return; }
+    toast(`動画（${Math.round(total / 1048576)}MB）を書き出しています…`);
+    list = [];
+    for (const r of records) list.push(r.videos && r.videos.length ? {...r, videos:await Promise.all(r.videos.map(async v => ({id:v.id, type:v.type, poster:v.poster, data:v.blob ? await blobToDataURL(v.blob) : ''})))} : r);
+  } else list = records.map(r => r.videos && r.videos.length ? {...r, videos:[]} : r);   // keeps the file small
+  const name = `stash-${today()}${withVideos ? '-動画入り' : ''}.json`;
+  const json = JSON.stringify({app:'gurumemo', version:2, exportedAt:new Date().toISOString(), cats, colors, records:list});
   const file = new File([json], name, {type:'application/json'});
   const done = () => { lsSet('gm-backup', String(Date.now())); renderNudge(); toast('書き出しました'); };
   if (navigator.canShare && navigator.canShare({files:[file]})) {
@@ -313,7 +330,9 @@ $('#exportBtn').addEventListener('click', async () => {
   }
   const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = name;
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000); done();
-});
+}
+$('#exportBtn').addEventListener('click', () => doExport(false));
+$('#exportVidBtn').addEventListener('click', () => doExport(true));
 $('#importBtn').addEventListener('click', () => $('#importFile').click());
 $('#importFile').addEventListener('change', async e => {
   const f = e.target.files && e.target.files[0]; e.target.value = '';
@@ -323,7 +342,12 @@ $('#importFile').addEventListener('change', async e => {
     if (data.app === 'gurumemo' && Array.isArray(data.records)) {
       if (Array.isArray(data.cats)) for (const c of data.cats) { if (c && c.id && !cats.find(x => x.id === c.id)) cats.push(c); }
       if (data.colors) colors = {...colors, ...data.colors};
-      for (const r of data.records) { if (r && r.id && r.cat && r.shop && !r.sample) { await dbPut(r); n++; } }
+      for (const r of data.records) {
+        if (!(r && r.id && r.cat && r.shop && !r.sample)) continue;
+        if (Array.isArray(r.videos)) r.videos = (await Promise.all(r.videos.map(async v => v && v.data ? {id:v.id, type:v.type, poster:v.poster, blob:await dataURLtoBlob(v.data)} : null))).filter(Boolean);
+        const old = records.find(x => x.id === r.id); if (old && old.videos && old.videos.length && !(r.videos && r.videos.length)) r.videos = old.videos;
+        await dbPut(r); n++;
+      }
       await saveCats(); await setMeta('colors', colors);
     } else {   // older single-genre files → into the genre you are in now
       const list = Array.isArray(data) ? data : data.entries;

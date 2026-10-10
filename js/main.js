@@ -12,6 +12,7 @@ function tileArt(c){
 function renderSelect(){
   $('#catGrid').innerHTML = cats.map((c, i) => `
     <button class="tile" type="button" data-cid="${esc(c.id)}">
+      ${selEditing && cats.length > 1 ? `<span class="tdel" data-del aria-label="${esc(c.name)}を削除">×</span>` : ''}
       ${selEditing ? `<span class="tools"><span data-move="-1" aria-label="前へ" ${i === 0 ? 'style="visibility:hidden"' : ''}>◀</span><span data-move="1" aria-label="後ろへ" ${i === cats.length - 1 ? 'style="visibility:hidden"' : ''}>▶</span></span>` : ''}
       ${tileArt(c)}
       <span class="label">${esc(c.name)}</span>
@@ -112,6 +113,7 @@ $('#catGrid').addEventListener('click', async e => {
   if (e.target.closest('[data-addcat]')) { openCatSheet(null); return; }
   const tile = e.target.closest('[data-cid]'); if (!tile) return;
   const i = cats.findIndex(c => c.id === tile.dataset.cid); if (i < 0) return;
+  if (selEditing && e.target.closest('[data-del]')) { askDeleteCat(cats[i]); return; }
   const mv = e.target.closest('[data-move]');
   if (selEditing && mv) {
     const j = i + Number(mv.dataset.move); if (j < 0 || j >= cats.length) return;
@@ -156,7 +158,7 @@ function renderLinkList(){
   $('#linkList').innerHTML = ls.length ? ls.map((l, i) => {
     const info = linkInfo(l); if (!info) return '';
     const where = info.special === 'ig' ? 'アプリで名前を検索' : info.special === 'tt' ? 'アプリで名前を検索' : info.url.replace(/^https?:\/\//, '').split('/')[0];
-    return `<div class="lrow">${lbtnHTML(info)}<span class="lurl">${esc(where)}</span>
+    return `<div class="lrow">${lbtnHTML(info)}<span class="lurl"><b style="color:var(--ink)">${esc(info.label)}</b> · ${esc(where)}</span>
       <button type="button" class="ctl" data-lmv="-1" data-i="${i}" aria-label="上へ" ${i === 0 ? 'style="visibility:hidden"' : ''}>▲</button>
       <button type="button" class="ctl" data-lmv="1" data-i="${i}" aria-label="下へ" ${i === ls.length - 1 ? 'style="visibility:hidden"' : ''}>▼</button>
       <button type="button" class="ctl" data-ldel data-i="${i}" aria-label="${esc(info.label)}を外す">×</button></div>`;
@@ -216,13 +218,22 @@ $('#catSave').addEventListener('click', async () => {
     renderSelect(); renderSelBg(); toast(`「${name}」を追加しました`);
   }
 });
-$('#catDelete').addEventListener('click', async () => {
-  const b = $('#catDelete'); if (!catEditing) return;
-  if (!b.dataset.armed) { b.dataset.armed = '1'; b.classList.add('armed'); b.textContent = '記録も消えます。もう一度押すと削除'; setTimeout(() => { b.dataset.armed = ''; b.classList.remove('armed'); b.textContent = 'このジャンルを削除'; }, 3500); return; }
-  const id = catEditing.id;
+async function deleteCat(id){
   for (const r of records.filter(x => x.cat === id)) { try { await dbDel(r.id); } catch {} }
   records = records.filter(x => x.cat !== id);
   cats = cats.filter(c => c.id !== id); await saveCats();
+}
+function askDeleteCat(c){
+  if (cats.length <= 1) { toast('ジャンルは1つ以上必要です'); return; }
+  const n = records.filter(x => x.cat === c.id).length;
+  actionSheet(`「${c.name}」を削除しますか？${n ? `\n記録${n}件も一緒に消えます（元に戻せません）` : ''}`, [
+    {label:`「${c.name}」を削除する`, danger:true, fn:async () => { const keepEdit = selEditing; await deleteCat(c.id); toast('削除しました'); goHome(); selEditing = keepEdit && cats.length > 1; renderSelect(); }},
+  ]);
+}
+$('#catDelete').addEventListener('click', async () => {
+  const b = $('#catDelete'); if (!catEditing) return;
+  if (!b.dataset.armed) { b.dataset.armed = '1'; b.classList.add('armed'); b.textContent = '記録も消えます。もう一度押すと削除'; setTimeout(() => { b.dataset.armed = ''; b.classList.remove('armed'); b.textContent = 'このジャンルを削除'; }, 3500); return; }
+  await deleteCat(catEditing.id);
   hide($('#catSheet')); toast('削除しました'); goHome();
 });
 

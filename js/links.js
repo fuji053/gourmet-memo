@@ -3,23 +3,26 @@
 
 /* {q} is replaced with the name of the record */
 const LINK_PRESETS = {
-  ig:       {label:'Instagram',   cls:'ig', special:'ig'},
-  tt:       {label:'TikTok',      cls:'tt', color:'#111111', special:'tt'},
-  tabelog:  {label:'食べログ',     color:'#F5A623', text:'#222222', url:'https://tabelog.com/rstLst/?sw={q}'},
-  amazon:   {label:'Amazon',      color:'#FF9900', text:'#111111', url:'https://www.amazon.co.jp/s?k={q}'},
-  rakuten:  {label:'楽天',         color:'#BF0000', url:'https://search.rakuten.co.jp/search/mall/{q}/'},
-  yahoo:    {label:'Yahoo!ショッピング', color:'#FF0033', url:'https://shopping.yahoo.co.jp/search?p={q}'},
-  filmarks: {label:'Filmarks',    color:'#FFE100', text:'#111111', url:'https://filmarks.com/search/movies?q={q}'},
-  netflix:  {label:'Netflix',     color:'#E50914', url:'https://www.netflix.com/search?q={q}'},
-  prime:    {label:'Prime Video', color:'#00A8E1', url:'https://www.amazon.co.jp/s?k={q}&i=instant-video'},
-  unext:    {label:'U-NEXT',      color:'#1D1D1D', url:'https://video.unext.jp/freeword?query={q}'},
-  youtube:  {label:'YouTube',     color:'#FF0000', url:'https://www.youtube.com/results?search_query={q}'},
-  x:        {label:'X',           color:'#000000', url:'https://x.com/search?q={q}'},
-  spotify:  {label:'Spotify',     color:'#1DB954', text:'#111111', url:'https://open.spotify.com/search/{q}'},
-  jalan:    {label:'じゃらん',     color:'#E8380D', url:'https://www.jalan.net/kankou/?keyword={q}'},
-  google:   {label:'Google',      color:'#4285F4', url:'https://www.google.com/search?q={q}'},
-  wiki:     {label:'Wikipedia',   color:'#555555', url:'https://ja.wikipedia.org/w/index.php?search={q}'},
+  ig:       {label:'Instagram', short:'Insta\ngram',   cls:'ig', special:'ig'},
+  tt:       {label:'TikTok', short:'TikTok',      cls:'tt', color:'#111111', special:'tt'},
+  tabelog:  {label:'食べログ', short:'食べ\nログ',     color:'#F5A623', text:'#222222', url:'https://tabelog.com/rstLst/?sw={q}'},
+  amazon:   {label:'Amazon', short:'amazon',      color:'#FF9900', text:'#111111', url:'https://www.amazon.co.jp/s?k={q}'},
+  rakuten:  {label:'楽天', short:'楽天',         color:'#BF0000', url:'https://search.rakuten.co.jp/search/mall/{q}/'},
+  yahoo:    {label:'Yahoo!ショッピング', short:'Yahoo!', color:'#FF0033', url:'https://shopping.yahoo.co.jp/search?p={q}'},
+  filmarks: {label:'Filmarks', short:'Film\nmarks',    color:'#FFE100', text:'#111111', url:'https://filmarks.com/search/movies?q={q}'},
+  netflix:  {label:'Netflix', short:'Netflix',     color:'#E50914', url:'https://www.netflix.com/search?q={q}', app:'nflx://www.netflix.com/search?q={q}'},
+  prime:    {label:'Prime Video', short:'Prime\nVideo', color:'#00A8E1', url:'https://www.amazon.co.jp/s?k={q}&i=instant-video'},
+  unext:    {label:'U-NEXT', short:'U-NEXT',      color:'#1D1D1D', url:'https://video.unext.jp/freeword?query={q}'},
+  youtube:  {label:'YouTube', short:'You\nTube',     color:'#FF0000', url:'https://www.youtube.com/results?search_query={q}'},
+  x:        {label:'X', short:'X',           color:'#000000', url:'https://x.com/search?q={q}'},
+  spotify:  {label:'Spotify', short:'Spotify',     color:'#1DB954', text:'#111111', url:'https://open.spotify.com/search/{q}'},
+  jalan:    {label:'じゃらん', short:'じゃらん',     color:'#E8380D', url:'https://www.jalan.net/kankou/?keyword={q}'},
+  google:   {label:'Google', short:'Google',      color:'#4285F4', url:'https://www.google.com/search?q={q}'},
+  wiki:     {label:'Wikipedia', short:'Wiki',   color:'#555555', url:'https://ja.wikipedia.org/w/index.php?search={q}'},
 };
+
+/* the site whose own icon is shown on each button */
+const LINK_DOMAINS = {ig:'instagram.com', tt:'tiktok.com', tabelog:'tabelog.com', amazon:'amazon.co.jp', rakuten:'rakuten.co.jp', yahoo:'shopping.yahoo.co.jp', filmarks:'filmarks.com', netflix:'netflix.com', prime:'primevideo.com', unext:'video.unext.jp', youtube:'youtube.com', x:'x.com', spotify:'spotify.com', jalan:'jalan.net', google:'google.com', wiki:'wikipedia.org'};
 
 /* sensible starting buttons for a genre, from its form and name */
 function defaultLinks(c){
@@ -36,8 +39,11 @@ const wantsStreaming = c => c.tmpl === 'work' && /映画|ドラマ|アニメ|シ
 
 /* a stored link is either a preset key ('amazon') or {label, url, color} made by the user */
 function linkInfo(l){
-  if (typeof l === 'string') return LINK_PRESETS[l] ? {key:l, ...LINK_PRESETS[l]} : null;
-  if (l && l.url && l.label) return {label:l.label, url:l.url, color:l.color || '#3A6EA5', text:textOn(l.color || '#3A6EA5')};
+  if (typeof l === 'string') return LINK_PRESETS[l] ? {key:l, dom:LINK_DOMAINS[l], ...LINK_PRESETS[l]} : null;
+  if (l && l.url && l.label) {
+    let dom = ''; try { dom = new URL(l.url.split('{q}').join('x')).hostname; } catch {}
+    return {label:l.label, url:l.url, dom, color:l.color || '#3A6EA5', text:textOn(l.color || '#3A6EA5')};
+  }
   return null;
 }
 function textOn(hex){
@@ -46,8 +52,13 @@ function textOn(hex){
   return (r * 299 + g * 587 + b * 114) / 1000 > 160 ? '#111111' : '#ffffff';
 }
 function lbtnHTML(info, attrs){
-  const style = info.cls === 'ig' ? '' : `style="--c:${esc(info.color || '#333')};--t:${esc(info.text || '#fff')}"`;
-  return `<button type="button" class="lbtn ${info.cls || ''}" ${style} ${attrs || ''}>${esc(info.label)}</button>`;
+  const short = info.short || cleanName(info.label).slice(0, 4);
+  const lines = short.split('\n'), longest = Math.max(...lines.map(l => l.length));
+  const fs = longest <= 2 && lines.length === 1 ? 22 : longest <= 5 ? 14 : longest <= 7 ? 12 : 10;
+  const style = info.cls === 'ig' ? '' : `--c:${esc(info.color || '#333')};--t:${esc(info.text || '#fff')}`;
+  // each service's own site icon, loaded from the internet; the coloured text tile stays underneath as a fallback
+  const img = info.dom ? `<img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(info.dom)}&amp;sz=128" alt="" loading="lazy" referrerpolicy="no-referrer" onload="if(this.naturalWidth<48)this.remove();else this.parentNode.classList.add('img')" onerror="this.remove()">` : '';
+  return `<button type="button" class="lbtn ${info.cls || ''}" style="${style}" ${attrs || ''}><span class="lico" style="font-size:${fs}px">${lines.map(esc).join('<br>')}${img}</span><span class="lname">${esc(info.label)}</span></button>`;
 }
 function linkRowHTML(c, name){
   const ls = (Array.isArray(c.links) ? c.links : defaultLinks(c)).map(linkInfo).filter(Boolean);
@@ -61,7 +72,17 @@ function bindLinkRow(root, c, name){
 function openLink(info, name){
   if (!info) return;
   if (info.special) { openSNS(info.special, name); return; }
-  const url = info.url.split('{q}').join(encodeURIComponent(cleanName(name)));
+  const fill = t => t.split('{q}').join(encodeURIComponent(cleanName(name)));
+  const url = fill(info.url);
+  if (info.app) {   // open the installed app; if nothing happens, fall back to the web page
+    const n = cleanName(name);
+    copyText(n).then(ok => { if (ok) toast(`「${n}」をコピーしました。見つからないときは検索欄に貼り付けてください`); });
+    let left = false; const onHide = () => { left = true; };
+    document.addEventListener('visibilitychange', onHide, {once:true});
+    window.location.href = fill(info.app);
+    setTimeout(() => { document.removeEventListener('visibilitychange', onHide); if (!left && !document.hidden) { const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; document.body.appendChild(a); a.click(); a.remove(); } }, 1400);
+    return;
+  }
   const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener';
   document.body.appendChild(a); a.click(); a.remove();
 }

@@ -210,7 +210,8 @@ function openEdit(entry, opts = {}){
   F.editingId = entry && entry.id && !opts.prefill ? entry.id : null;
   F.fromWishId = opts.fromWish || null;
   F.tmdb = entry && entry.tmdb || null;
-  $('#editTitle').textContent = F.editingId ? '記録を直す' : T().fab;
+  $('#editTitle').textContent = F.editingId ? '編集中' : T().fab;
+  $('#editSheet').classList.toggle('instant', !!opts.inline);
   $('#fShop').value = entry?.shop || '';
   $('#fSub').value = entry?.sub || '';
   $('#fWhere').value = entry?.where || '';
@@ -226,12 +227,12 @@ function openEdit(entry, opts = {}){
   $('#fNomi').checked = !!entry?.nomi;
   F.dishes = (entry?.dishes || []).map(d => ({...d}));
   F.interior = (entry?.interior || []).slice(); F.menus = (entry?.menus || []).slice(); F.gallery = (entry?.gallery || []).slice();
+  F.videos = (entry?.videos || []).slice();
   F.tags = entry ? tagsOf(entry).slice() : (view === 'types' && typeSel !== 'all' ? [typeSel] : []);
   F.loc = entry && entry.lat != null ? {lat:entry.lat, lng:entry.lng} : null;
   $('#shopErr').hidden = true; $('#dateHint').hidden = true; $('#formTypeRow').hidden = true; $('#formTypeErr').hidden = true;
-  renderDishes(); renderShots(); renderTagPick(); setRating(entry?.rating || 0); setCover(entry?.photo || ''); updatePerPerson(); renderLoc();
+  renderDishes(); renderShots(); renderVideoShots(); renderTagPick(); setRating(entry?.rating || 0); setCover(entry?.photo || ''); updatePerPerson(); renderLoc();
   show($('#editSheet'));
-  if (opts.camera) pickPhotos({camera:true}).then(f => takeCover(f, true));   // same tap opens the camera
 }
 $('#editForm').addEventListener('submit', async e => {
   e.preventDefault();
@@ -249,6 +250,7 @@ $('#editForm').addEventListener('submit', async e => {
     rating: F.rating, date: $('#fDate').value || today(), photo: F.photo,
     dishes: t.items ? F.dishes.filter(d => d.name || d.photo).map(d => ({id:d.id, name:cleanName(d.name), rec:!!d.rec, photo:d.photo || ''})) : [],
     interior: t.interior ? F.interior.slice() : [], menus: t.menus ? F.menus.slice() : [], gallery: t.gallery ? F.gallery.slice() : [],
+    videos: t.video ? (F.videos || []).slice() : [],
     mood: t.interior ? cleanName($('#fMood').value) : '',
     total, people, price: t.price ? perPerson(total, people) : '',
     resv: t.resv ? $('#fResv').value : '', nomi: t.nomi ? $('#fNomi').checked : false,
@@ -263,7 +265,8 @@ $('#editForm').addEventListener('submit', async e => {
   if (rec.pref) lsSet('gm-pref', rec.pref);
   const i = records.findIndex(x => x.id === rec.id);
   if (i >= 0) records[i] = rec; else records.push(rec);
-  let msg = prev ? '直しました' : `${catRecords('visit').length}${t.unit}目を記録しました`;
+  const again = catRecords('visit').filter(x => cleanName(x.shop).replace(/\s+/g, '').toLowerCase() === shop.replace(/\s+/g, '').toLowerCase()).length;
+  let msg = prev ? '直しました' : again >= 2 ? `「${shop}」は${again}回目！` : `${catRecords('visit').length}${t.unit}目を記録しました`;
   if (F.fromWishId) {
     try { await dbDel(F.fromWishId); } catch {}
     records = records.filter(w => w.id !== F.fromWishId); F.fromWishId = null;
@@ -272,6 +275,7 @@ $('#editForm').addEventListener('submit', async e => {
   hide($('#editSheet'));
   if (!$('#detailSheet').hidden) openDetail(rec.id, true);
   renderAll(); toast(msg);
+  if (t.shop) autoPlace([rec]);
 });
 
 /* ---------- wish form ---------- */
@@ -312,6 +316,7 @@ $('#wishForm').addEventListener('submit', async e => {
   if (w.pref) lsSet('gm-pref', w.pref);
   const i = records.findIndex(x => x.id === w.id); if (i >= 0) records[i] = w; else records.push(w);
   hide($('#wishSheet')); renderAll(); toast(prev ? '直しました' : `「${T().wish}」に追加しました`);
+  if (shopT) autoPlace([w]);
 });
 function renderWishExtras(w){
   const box = $('#wExtras');
@@ -322,7 +327,7 @@ function renderWishExtras(w){
   fillStream(box, w, () => renderWishExtras(records.find(x => x.id === w.id) || w));
 }
 function wentTo(w){
-  openEdit({shop:w.shop, pref:w.pref, place:w.place, lat:w.lat, lng:w.lng, dishes: w.menu ? [{id:newId('d'), name:w.menu, rec:true, photo:''}] : [], memo:w.memo || '', tmdb:w.tmdb || null}, {prefill:true, fromWish:w.id, camera:true});
+  openEdit({shop:w.shop, pref:w.pref, place:w.place, lat:w.lat, lng:w.lng, dishes: w.menu ? [{id:newId('d'), name:w.menu, rec:true, photo:''}] : [], memo:w.memo || '', tmdb:w.tmdb || null}, {prefill:true, fromWish:w.id});
 }
 $('#wWent').addEventListener('click', () => { const w = records.find(x => x.id === W.editing); if (w) wentTo(w); });
 $('#wDel').addEventListener('click', async () => {

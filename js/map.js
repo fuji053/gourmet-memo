@@ -1,12 +1,12 @@
-/* グルメモ — in-app map (国土地理院タイル, no Google) & location picker */
+/* Stash — in-app map (国土地理院 標準地図) with a Google-Maps-like layout */
 'use strict';
 
-const GSI_TILES = 'https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png';
+const GSI_TILES = 'https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png';
 const GSI_ATTR = '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">地理院タイル</a>';
 const JAPAN = [36.2, 138.25];
 const PREF_CENTER = {北海道:[43.064,141.347],青森県:[40.824,140.740],岩手県:[39.704,141.153],宮城県:[38.269,140.872],秋田県:[39.719,140.102],山形県:[38.240,140.364],福島県:[37.750,140.468],茨城県:[36.342,140.447],栃木県:[36.566,139.884],群馬県:[36.391,139.061],埼玉県:[35.857,139.649],千葉県:[35.605,140.123],東京都:[35.690,139.692],神奈川県:[35.448,139.643],新潟県:[37.902,139.023],富山県:[36.695,137.211],石川県:[36.594,136.626],福井県:[36.065,136.222],山梨県:[35.664,138.568],長野県:[36.651,138.181],岐阜県:[35.391,136.722],静岡県:[34.977,138.383],愛知県:[35.180,136.907],三重県:[34.730,136.509],滋賀県:[35.004,135.868],京都府:[35.021,135.756],大阪府:[34.686,135.520],兵庫県:[34.691,135.183],奈良県:[34.685,135.833],和歌山県:[34.226,135.168],鳥取県:[35.504,134.238],島根県:[35.472,133.051],岡山県:[34.662,133.935],広島県:[34.396,132.459],山口県:[34.186,131.471],徳島県:[34.066,134.559],香川県:[34.340,134.043],愛媛県:[33.842,132.766],高知県:[33.560,133.531],福岡県:[33.607,130.418],佐賀県:[33.249,130.299],長崎県:[32.745,129.874],熊本県:[32.790,130.742],大分県:[33.238,131.613],宮崎県:[31.911,131.424],鹿児島県:[31.560,130.558],沖縄県:[26.212,127.681]};
 const hasLeaflet = () => typeof L !== 'undefined';
-const pinIcon = color => L.divIcon({className:'', html:`<div class="gm-pin" style="background:${color}"></div>`, iconSize:[24,24], iconAnchor:[12,29], popupAnchor:[0,-26]});
+const pinIcon = color => L.divIcon({className:'gpin', html:`<svg width="28" height="40" viewBox="0 0 28 40" aria-hidden="true"><path d="M14 0C6.3 0 0 6.2 0 13.9 0 24.3 14 40 14 40s14-15.7 14-26.1C28 6.2 21.7 0 14 0z" fill="${color}" stroke="rgba(0,0,0,.25)" stroke-width="1"/><circle cx="14" cy="14" r="5.2" fill="#fff" fill-opacity=".9"/></svg>`, iconSize:[28,40], iconAnchor:[14,40]});
 
 function locateHere(cb){
   if (!navigator.geolocation) { cb(null); return; }
@@ -26,47 +26,95 @@ $('#mapLegend').addEventListener('click', e => {
   const b = e.target.closest('[data-k]'); if (!b) return;
   mapShow[b.dataset.k] = !mapShow[b.dataset.k]; lsSet('gm-mapshow', JSON.stringify(mapShow)); renderMap(false);
 });
+const mapRecords = () => [...shownRecords('visit'), ...shownRecords('wish')].filter(r => r.lat != null && r.lng != null);
 function renderMap(fit = true){
-  renderLegend();
-  if (!hasLeaflet()) { $('#mapSub').textContent = '地図を読み込めませんでした。電波のある場所で開き直してください'; return; }
+  renderLegend(); hideCard(); $('#mapResults').hidden = true; $('#mapQuery').value = '';
+  if (!hasLeaflet()) { $('#mapSub').hidden = false; $('#mapSub').textContent = '地図を読み込めませんでした。電波のある場所で開き直してください'; return; }
   if (!mainMap) {
-    mainMap = L.map('mapBox', {zoomControl:true, attributionControl:true, minZoom:5, maxZoom:18}).setView(JAPAN, 5);
+    mainMap = L.map('mapBox', {zoomControl:false, attributionControl:true, minZoom:5, maxZoom:18}).setView(JAPAN, 5);
+    mainMap.attributionControl.setPrefix(false); mainMap.attributionControl.setPosition('bottomleft');
     L.tileLayer(GSI_TILES, {attribution:GSI_ATTR, maxZoom:18, minZoom:5}).addTo(mainMap);
     pinLayer = L.layerGroup().addTo(mainMap);
+    mainMap.on('click', hideCard);
   }
   setTimeout(() => mainMap.invalidateSize(), 30);
-  pinLayer.clearLayers();
-  const all = [...shownRecords('visit'), ...shownRecords('wish')].filter(r => r.lat != null && r.lng != null);
-  const pts = [];
-  const t = T();
-  for (const r of all) {
-    const k = mapKind(r); if (!mapShow[k]) continue;
-    const m = L.marker([r.lat, r.lng], {icon:pinIcon(colors[k]), title:r.shop});
-    const label = k === 'wish' ? t.wish : k === 'again' ? t.again : t.visited;
-    m.bindPopup(`<b>${esc(r.shop)}</b><span style="color:${colors[k]};font-weight:700">● ${esc(label)}</span>${r.rating ? ` ★${r.rating.toFixed(1)}` : ''}${r.sample ? '（見本）' : ''}<br><button type="button" data-open="${esc(r.id)}" data-list="${r.list}">くわしく見る</button>`);
-    m.addTo(pinLayer); pts.push([r.lat, r.lng]);
-  }
-  const missing = [...catRecords('visit'), ...catRecords('wish')].filter(r => r.lat == null).length;
-  $('#mapSub').textContent = `${pts.length}件を表示中` + (missing ? `・位置が未設定のものが${missing}件（詳細の「地図に位置を設定」から）` : '');
+  const pts = drawPins();
+  const sub = $('#mapSub');
+  sub.hidden = pts.length > 0;
+  sub.textContent = gReady() ? '地図に出せる記録がまだありません。店名からGoogleマップで場所を探して、自動でピンを立てます。' : '地図に出せる記録がまだありません。';
   if (fit) {
     if (pts.length === 1) mainMap.setView(pts[0], 15);
-    else if (pts.length) mainMap.fitBounds(pts, {padding:[36,36], maxZoom:15});
+    else if (pts.length) mainMap.fitBounds(pts, {padding:[60, 40], maxZoom:15});
     else mainMap.setView(PREF_CENTER[lastPref()] || JAPAN, lastPref() ? 10 : 5);
   }
+  // records without a position: look them up on Google and add their pins as they come in
+  autoPlace([...catRecords('visit'), ...catRecords('wish')], () => { if (view === 'map') { const p = drawPins(); if (p.length) $('#mapSub').hidden = true; } });
 }
-document.addEventListener('click', e => {
-  const b = e.target.closest('.leaflet-popup [data-open]'); if (!b) return;
-  const id = b.dataset.open;
-  if (b.dataset.list === 'wish') { const w = shownRecords('wish').find(x => x.id === id); if (w && !w.sample) openWish(w); else toast('見本です'); }
-  else openDetail(id);
-});
+function drawPins(){
+  pinLayer.clearLayers();
+  const pts = [];
+  for (const r of mapRecords()) {
+    const k = mapKind(r); if (!mapShow[k]) continue;
+    const m = L.marker([r.lat, r.lng], {icon:pinIcon(colors[k]), title:r.shop});
+    m.on('click', ev => { L.DomEvent.stopPropagation(ev); showCard(r); });
+    m.addTo(pinLayer); pts.push([r.lat, r.lng]);
+  }
+  return pts;
+}
+
+/* Google-Maps-like place card at the bottom */
+let cardRec = null;
+function showCard(r){
+  cardRec = r;
+  const t = T(), k = mapKind(r);
+  const label = k === 'wish' ? t.wish : k === 'again' ? t.again : t.visited;
+  const real = r.photo && r.photo.startsWith('data:image');
+  $('#mapCard').innerHTML = `${real ? `<img src="${r.photo}" alt="">` : '<span class="noimg"></span>'}
+    <div><h3>${esc(r.shop)}</h3>
+      <div class="mmeta">${r.rating ? `★${r.rating.toFixed(1)} · ` : ''}<span style="color:${colors[k]};font-weight:700">● ${esc(label)}</span>${r.sample ? '（見本）' : ''}</div>
+      ${areaText(r) ? `<div class="mmeta">${esc(areaText(r))}</div>` : ''}
+      <div class="mrow"><button type="button" class="pri" id="mcOpen">くわしく</button><a href="https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lng}" target="_blank" rel="noopener">経路</a></div>
+    </div><button type="button" class="mx" id="mcClose" aria-label="閉じる">✕</button>`;
+  $('#mapCard').hidden = false; $('#mapLocate').style.bottom = 'calc(var(--sab) + 140px)';
+  $('#mcClose').onclick = hideCard;
+  $('#mcOpen').onclick = () => {
+    if (r.list === 'wish') { if (r.sample) toast('見本です'); else openWish(records.find(x => x.id === r.id) || r); }
+    else openDetail(r.id);
+  };
+  mainMap && mainMap.panTo([r.lat, r.lng]);
+}
+function hideCard(){ cardRec = null; $('#mapCard').hidden = true; $('#mapLocate').style.bottom = ''; }
 function focusOnMap(r){
-  setTimeout(() => {
-    if (!mainMap) return;
-    mainMap.setView([r.lat, r.lng], 16);
-    pinLayer.eachLayer(l => { const p = l.getLatLng(); if (Math.abs(p.lat - r.lat) < 1e-7 && Math.abs(p.lng - r.lng) < 1e-7) l.openPopup(); });
-  }, 120);
+  setTimeout(() => { if (!mainMap) return; mainMap.setView([r.lat, r.lng], 16); showCard(r); }, 120);
 }
+$('#mapClose').addEventListener('click', () => setView(lastListView || 'all'));
+$('#mapQuery').addEventListener('input', () => {
+  const q = $('#mapQuery').value.trim().toLowerCase(), box = $('#mapResults');
+  if (!q) { box.hidden = true; return; }
+  const hits = [...shownRecords('visit'), ...shownRecords('wish')].filter(r => (r.shop || '').toLowerCase().includes(q) || (r.place || '').toLowerCase().includes(q)).slice(0, 12);
+  box.innerHTML = hits.length ? hits.map(r => `<button type="button" data-id="${esc(r.id)}">${esc(r.shop)}<span>${r.lat != null ? esc(areaText(r) || '地図で見る') : '場所がわからないため地図に出せません'}</span></button>`).join('') : '<button type="button" disabled>見つかりませんでした</button>';
+  box.hidden = false;
+});
+$('#mapResults').addEventListener('click', e => {
+  const b = e.target.closest('[data-id]'); if (!b) return;
+  const r = [...shownRecords('visit'), ...shownRecords('wish')].find(x => x.id === b.dataset.id);
+  $('#mapResults').hidden = true; $('#mapQuery').blur();
+  if (!r) return;
+  if (r.lat == null) { toast('この記録は場所がわからないため、地図に出せません'); return; }
+  const k = mapKind(r); if (!mapShow[k]) { mapShow[k] = true; renderMap(false); }
+  mainMap.setView([r.lat, r.lng], 16); showCard(r);
+});
+let hereMarker = null;
+$('#mapLocate').addEventListener('click', () => {
+  toast('現在地を探しています…');
+  locateHere(p => {
+    if (!p) { toast('現在地を取得できませんでした。位置情報の許可を確認してください'); return; }
+    if (!mainMap) return;
+    if (hereMarker) hereMarker.remove();
+    hereMarker = L.circleMarker([p.lat, p.lng], {radius:8, color:'#fff', weight:3, fillColor:'#1a73e8', fillOpacity:1}).addTo(mainMap);
+    mainMap.setView([p.lat, p.lng], 15);
+  });
+});
 
 /* ---------- location picker (move the map under the fixed pin) ---------- */
 let locMap = null, locCb = null;

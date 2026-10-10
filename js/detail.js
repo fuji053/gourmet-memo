@@ -29,7 +29,7 @@ function galleryHTML(e){   // 追加したジャンル：シンプルなカー�
 function photosHTML(title, arr, cls){
   if (!arr || !arr.length) return '';
   if (cls === 'menugrid') return `<section class="dsec"><h4>${esc(title)}</h4><div class="menugrid">${arr.map((u, i) => `<img src="${u}" alt="${esc(title)} ${i + 1}枚目" data-full="${u}">`).join('')}</div><p class="hint">タップで大きく表示</p></section>`;
-  return `<section class="dsec"><h4>${esc(title)}</h4><div class="strip">${arr.map((u, i) => `<img src="${u}" alt="${esc(title)} ${i + 1}枚目" data-full="${u}">`).join('')}</div></section>`;
+  return `<section class="dsec"><h4>${esc(title)}</h4><div class="mgrid p ${arr.length <= 3 ? 'n' + arr.length : 'many'}">${arr.map((u, i) => `<img src="${u}" alt="${esc(title)} ${i + 1}枚目" data-full="${u}">`).join('')}</div></section>`;
 }
 
 function openDetail(id, refreshOnly){
@@ -49,10 +49,10 @@ function openDetail(id, refreshOnly){
       <div class="drate">${starsHTML(e.rating || 0, 26)}<b>${(e.rating || 0).toFixed(1)}</b><span style="color:var(--muted);font-size:13px">${e.rating ? esc(word(e.rating)) : '未評価'}</span></div>
     </div>
     <div class="dbtns">
-      ${t.shop ? `<a class="dbtn" href="${mapUrl(e.shop, e.pref, e.place)}" target="_blank" rel="noopener">${PIN}Googleマップ</a>
-      <button class="dbtn" type="button" id="dInMap">${MAPI}${e.lat != null ? 'アプリの地図' : '地図に位置を設定'}</button>` : ''}
-      <button class="dbtn accent full" type="button" id="dShare">${SHARE}LINEなどでシェア</button>
+      ${t.shop ? `<a class="dbtn${e.lat != null ? '' : ' full'}" href="${mapUrl(e.shop, e.pref, e.place)}" target="_blank" rel="noopener">${PIN}Googleマップ</a>
+      ${e.lat != null ? `<button class="dbtn" type="button" id="dInMap">${MAPI}アプリの地図</button>` : ''}` : ''}
     </div>
+    ${hoursHTML(e)}
     <dl class="dl">
       ${t.price ? `<dt>1人あたり</dt><dd>${yen(e.price)}${e.total !== '' && e.total != null ? `<span style="color:var(--muted);font-size:13px">（合計 ${yen(e.total)}）</span>` : ''}</dd>
       <dt>人数</dt><dd>${e.people ? esc(e.people) + '人' : '—'}</dd>` : ''}
@@ -70,22 +70,21 @@ function openDetail(id, refreshOnly){
     ${t.interior ? photosHTML('店内の雰囲気', e.interior, 'strip') + (e.mood ? `<p class="mood">${esc(e.mood)}</p>` : '') : ''}
     ${t.menus ? photosHTML('メニュー表', e.menus, 'menugrid') : ''}
     ${t.gallery ? photosHTML('写真', e.gallery, 'strip') : ''}
-    ${e.sample ? '' : '<div class="dactions"><button class="btn" type="button" id="dEdit">編集する</button><button class="btn danger" type="button" id="dDel">削除</button></div>'}`;
+    ${t.video ? videosHTML(e.videos) : ''}
+    ${e.sample ? '' : '<div class="dactions"><button class="btn danger" type="button" id="dDel">この記録を削除</button></div>'}`;
   const body = $('#detailBody');
   if (realPhoto) $('#dSave').onclick = () => saveImage(e.photo, `${e.shop}-${e.date || today()}.jpg`);
   bindLinkRow(body, cur, e.shop);
+  bindVideos(body, e.videos);
+  fillHours(body, e, () => renderAll());
   fillStream(body, e, () => openDetail(e.id, true));
-  $('#dShare').onclick = () => shareRecord(e);
-  if (t.shop) $('#dInMap').onclick = () => {
-    if (e.lat != null) { hide($('#detailSheet')); setView('map'); focusOnMap(e); return; }
-    if (e.sample) { toast('見本には位置を設定できません'); return; }
-    pickLocation(null, e.pref, async p => { if (!p) return; e.lat = p.lat; e.lng = p.lng; e.updatedAt = Date.now(); await dbPut(e); renderAll(); openDetail(e.id, true); toast('地図の位置を設定しました'); });
-  };
+  if (t.shop && e.lat != null) $('#dInMap').onclick = () => { hide($('#detailSheet')); setView('map'); focusOnMap(e); };
+  $('#dEditTop').hidden = !!e.sample;
+  $('#dEditTop').onclick = () => openEdit(e, {inline:true});
   if (!e.sample) {
-    $('#dEdit').onclick = () => openEdit(e);
     const b = $('#dDel'); let armed = false, tm;
     b.onclick = async () => {
-      if (!armed) { armed = true; b.classList.add('armed'); b.textContent = 'もう一度押すと削除'; tm = setTimeout(() => { armed = false; b.classList.remove('armed'); b.textContent = '削除'; }, 3000); return; }
+      if (!armed) { armed = true; b.classList.add('armed'); b.textContent = 'もう一度押すと削除'; tm = setTimeout(() => { armed = false; b.classList.remove('armed'); b.textContent = 'この記録を削除'; }, 3000); return; }
       clearTimeout(tm);
       try { await dbDel(e.id); } catch { toast('削除できませんでした'); return; }
       records = records.filter(x => x.id !== e.id);
@@ -107,9 +106,9 @@ async function saveImage(dataUrl, name){
 /* full-screen photo viewer */
 document.addEventListener('click', e => {
   const im = e.target.closest('#detailBody [data-full]'); if (!im) return;
-  $('#viewerImg').src = im.dataset.full; $('#viewer').hidden = false;
+  $('#viewerVid').hidden = true; $('#viewerImg').hidden = false; $('#viewerImg').src = im.dataset.full; $('#viewer').hidden = false;
 });
-$('#viewer').addEventListener('click', () => { $('#viewer').hidden = true; $('#viewerImg').removeAttribute('src'); });
+$('#viewer').addEventListener('click', e => { if (e.target.closest('#viewerVid')) return; closeViewer(); });
 
 /* ---------- SNS: copy the name, then open the app on that name ---------- */
 async function copyText(t){
@@ -142,7 +141,7 @@ function shareCode(e){
 const appBase = () => location.origin + location.pathname.replace(/[^/]*$/, '');
 function shareText(e){
   const t = T(); const lines = [`【${cur.name}】${e.shop}`];
-  if (e.rating) lines.push(`評価 ★${e.rating.toFixed(1)}`);
+  if (e.rating) lines.push(`評価 ★${e.rating.toFixed(1)}（${word(e.rating)}）`);
   if (e.sub) lines.push(e.sub);
   if (t.shop && (e.pref || e.place)) lines.push(`場所：${[e.pref, e.place].filter(Boolean).join(' ')}`);
   const rec = dishNames(e, true) || dishNames(e); if (rec) lines.push(`おすすめ：${rec}`);
@@ -153,7 +152,8 @@ function shareText(e){
 function shareRecord(e){
   const text = shareText(e);
   const acts = [
-    {label:'LINEで送る', fn:() => { window.location.href = 'https://line.me/R/share?text=' + encodeURIComponent(text); }},
+    {label:'メモを画像にして送る（LINEなど）', fn:() => shareAsImage(e, text)},
+    {label:'LINEで文章だけ送る', fn:() => { window.location.href = 'https://line.me/R/share?text=' + encodeURIComponent(text); }},
     {label:'ほかのアプリで共有（写真付き）', fn:async () => {
       const data = {title:e.shop, text};
       const real = e.photo && e.photo.startsWith('data:image/jpeg');

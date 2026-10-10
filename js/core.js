@@ -27,11 +27,11 @@ const TT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor
 
 /* ---------- genre templates (what a record holds and how it is shown) ---------- */
 const TEMPLATES = {
-  izakaya: { label:'居酒屋', desc:'', shop:true, items:true, price:true, resv:true, nomi:true, interior:false, menus:false, gallery:false, sub:false, where:false, display:'board',
+  izakaya: { label:'居酒屋', desc:'', shop:true, items:true, price:true, resv:true, nomi:true, interior:false, menus:false, gallery:false, video:true, sub:false, where:false, display:'board',
     unit:'軒', fab:'来店記録', name:'店名', cover:'外観', itemsLabel:'頼んだもの・おすすめ', date:'来店日', visited:'行った店', wish:'行ってみたい', again:'また行きたい', tags:'種類', went:'行った！' },
-  kissa:   { label:'喫茶', desc:'', shop:true, items:true, price:false, resv:false, nomi:false, interior:true, menus:true, gallery:false, sub:false, where:false, display:'showcase',
+  kissa:   { label:'喫茶', desc:'', shop:true, items:true, price:false, resv:false, nomi:false, interior:true, menus:true, gallery:false, video:true, sub:false, where:false, display:'showcase',
     unit:'軒', fab:'来店記録', name:'店名', cover:'外観', itemsLabel:'頼んだもの・おすすめ', date:'来店日', visited:'行った店', wish:'行ってみたい', again:'また行きたい', tags:'特徴', went:'行った！' },
-  place:   { label:'お店・場所', desc:'観光地・温泉・サウナ・カフェなど。地図あり', shop:true, items:true, price:true, resv:false, nomi:false, interior:false, menus:false, gallery:true, sub:false, where:false, display:'gallery',
+  place:   { label:'お店・場所', desc:'観光地・温泉・サウナ・カフェなど。地図あり', shop:true, items:true, price:true, resv:false, nomi:false, interior:false, menus:false, gallery:true, video:true, sub:false, where:false, display:'gallery',
     unit:'件', fab:'記録する', name:'名前', cover:'メイン写真', itemsLabel:'よかったもの・おすすめ', date:'行った日', visited:'行った場所', wish:'行ってみたい', again:'また行きたい', tags:'種類', went:'行った！' },
   work:    { label:'作品・もの', desc:'映画・お酒・本など。地図なし', shop:false, items:false, price:false, resv:false, nomi:false, interior:false, menus:false, gallery:true, sub:true, where:true, display:'gallery',
     unit:'件', fab:'記録する', name:'タイトル・名前', cover:'メイン写真', itemsLabel:'', date:'日付', visited:'記録', wish:'気になる', again:'もう一度', tags:'種類', went:'記録する' },
