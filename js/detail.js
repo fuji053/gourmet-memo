@@ -126,10 +126,7 @@ function openSNS(kind, name){
     setTimeout(() => { document.removeEventListener('visibilitychange', onHide); if (!left && !document.hidden) window.location.href = web; }, 1400);  // not installed → web
   };
   if (kind === 'ig') go(`instagram://tag?name=${encodeURIComponent(tag)}`, `https://www.instagram.com/explore/tags/${encodeURIComponent(tag)}/`);
-  else {
-    const a = document.createElement('a'); a.href = `https://www.tiktok.com/search?q=${encodeURIComponent(n)}`; a.target = '_blank'; a.rel = 'noopener';
-    document.body.appendChild(a); a.click(); a.remove();
-  }
+  else go(`snssdk1233://search?keyword=${encodeURIComponent(n)}`, `https://www.tiktok.com/search?q=${encodeURIComponent(n)}`);   // TikTok app, else the web
 }
 
 /* ---------- share: text for LINE etc. + a link that adds it to the friend's 行ってみたい ---------- */

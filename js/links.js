@@ -4,7 +4,7 @@
 /* {q} is replaced with the name of the record */
 const LINK_PRESETS = {
   ig:       {label:'Instagram', short:'Insta\ngram',   cls:'ig', special:'ig'},
-  tt:       {label:'TikTok', short:'TikTok',      cls:'tt', color:'#111111', special:'tt'},
+  tt:       {label:'TikTok', short:'TikTok',      cls:'tt', color:'#111111', special:'tt', icon:'icons/link-tiktok.png'},
   tabelog:  {label:'食べログ', short:'食べ\nログ',     color:'#F5A623', text:'#222222', url:'https://tabelog.com/rstLst/?sw={q}'},
   amazon:   {label:'Amazon', short:'amazon',      color:'#FF9900', text:'#111111', url:'https://www.amazon.co.jp/s?k={q}'},
   rakuten:  {label:'楽天', short:'楽天',         color:'#BF0000', url:'https://search.rakuten.co.jp/search/mall/{q}/'},
@@ -22,7 +22,7 @@ const LINK_PRESETS = {
 };
 
 /* the site whose own icon is shown on each button */
-const LINK_DOMAINS = {ig:'instagram.com', tt:'tiktok.com', tabelog:'tabelog.com', amazon:'amazon.co.jp', rakuten:'rakuten.co.jp', yahoo:'shopping.yahoo.co.jp', filmarks:'filmarks.com', netflix:'netflix.com', prime:'primevideo.com', unext:'video.unext.jp', youtube:'youtube.com', x:'x.com', spotify:'spotify.com', jalan:'jalan.net', google:'google.com', wiki:'wikipedia.org'};
+const LINK_DOMAINS = {ig:'instagram.com', tt:'www.tiktok.com', tabelog:'tabelog.com', amazon:'amazon.co.jp', rakuten:'rakuten.co.jp', yahoo:'shopping.yahoo.co.jp', filmarks:'filmarks.com', netflix:'netflix.com', prime:'primevideo.com', unext:'video.unext.jp', youtube:'youtube.com', x:'x.com', spotify:'spotify.com', jalan:'jalan.net', google:'google.com', wiki:'wikipedia.org'};
 
 /* sensible starting buttons for a genre, from its form and name */
 function defaultLinks(c){
@@ -57,9 +57,15 @@ function lbtnHTML(info, attrs){
   const fs = longest <= 2 && lines.length === 1 ? 22 : longest <= 5 ? 14 : longest <= 7 ? 12 : 10;
   const style = info.cls === 'ig' ? '' : `--c:${esc(info.color || '#333')};--t:${esc(info.text || '#fff')}`;
   // each service's own site icon, loaded from the internet; the coloured text tile stays underneath as a fallback
-  const img = info.dom ? `<img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(info.dom)}&amp;sz=128" alt="" loading="lazy" referrerpolicy="no-referrer" onload="if(this.naturalWidth<48)this.remove();else this.parentNode.classList.add('img')" onerror="this.remove()">` : '';
+  const img = info.icon ? `<img src="${info.icon}" alt="" onload="this.parentNode.classList.add('img')" onerror="this.remove()">` : info.dom ? `<img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(info.dom)}&amp;sz=128" data-dom="${esc(info.dom)}" alt="" loading="lazy" referrerpolicy="no-referrer" onload="lIconOk(this)" onerror="lIconNext(this)">` : '';
   return `<button type="button" class="lbtn ${info.cls || ''}" style="${style}" ${attrs || ''}><span class="lico" style="font-size:${fs}px">${lines.map(esc).join('<br>')}${img}</span><span class="lname">${esc(info.label)}</span></button>`;
 }
+/* site icon: Google's favicon service first, then the site's own app icon, else keep the coloured tile */
+function lIconNext(img){
+  if (!img.dataset.tried) { img.dataset.tried = '1'; img.src = `https://${img.dataset.dom}/apple-touch-icon.png`; return; }
+  img.remove();
+}
+function lIconOk(img){ if (img.naturalWidth < 48) lIconNext(img); else img.parentNode.classList.add('img'); }
 function linkRowHTML(c, name){
   const ls = (Array.isArray(c.links) ? c.links : defaultLinks(c)).map(linkInfo).filter(Boolean);
   if (!ls.length) return '';

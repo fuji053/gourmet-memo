@@ -212,6 +212,8 @@ function openEdit(entry, opts = {}){
   F.tmdb = entry && entry.tmdb || null;
   $('#editTitle').textContent = F.editingId ? '編集中' : T().fab;
   $('#editSheet').classList.toggle('instant', !!opts.inline);
+  $('#editDelWrap').hidden = !F.editingId;
+  { const b = $('#fDel'); b.dataset.armed = ''; b.classList.remove('armed'); b.textContent = 'この記録を削除'; }
   $('#fShop').value = entry?.shop || '';
   $('#fSub').value = entry?.sub || '';
   $('#fWhere').value = entry?.where || '';
@@ -276,6 +278,14 @@ $('#editForm').addEventListener('submit', async e => {
   if (!$('#detailSheet').hidden) openDetail(rec.id, true);
   renderAll(); toast(msg);
   if (t.shop) autoPlace([rec]);
+});
+
+$('#fDel').addEventListener('click', async () => {
+  const b = $('#fDel'), id = F.editingId; if (!id) return;
+  if (!b.dataset.armed) { b.dataset.armed = '1'; b.classList.add('armed'); b.textContent = 'もう一度押すと削除（元に戻せません）'; setTimeout(() => { b.dataset.armed = ''; b.classList.remove('armed'); b.textContent = 'この記録を削除'; }, 3500); return; }
+  try { await dbDel(id); } catch { toast('削除できませんでした'); return; }
+  records = records.filter(x => x.id !== id);
+  hide($('#editSheet')); hide($('#detailSheet')); renderAll(); toast('削除しました');
 });
 
 /* ---------- wish form ---------- */

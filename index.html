@@ -764,6 +764,7 @@ body:has(#view-map:not([hidden])) .toast{top:calc(var(--sat) + 116px)}
       <label class="toggle" for="fAgain"><span><b id="againToggleLabel">また行きたい</b><br><small style="color:var(--muted)" id="againToggleSub">「また行きたい」ページに並びます</small></span><input id="fAgain" type="checkbox"></label>
       <div class="field"><label for="fMemo">備考</label><textarea id="fMemo" placeholder="ちょっとしたメモに"></textarea></div>
       <div class="actions"><button class="btn primary" type="submit">保存</button></div>
+      <div class="dactions" id="editDelWrap" hidden><button class="btn danger" type="button" id="fDel">この記録を削除</button></div>
     </form>
   </div>
 </div>
