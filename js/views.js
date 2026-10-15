@@ -356,6 +356,6 @@ $('#importFile').addEventListener('change', async e => {
       for (const w of (data.wishes || [])) { if (w && w.id && w.shop && !w.sample) { await dbPut({...w, cat:cur.id, list:'wish'}); n++; } }
       if (Array.isArray(data.types)) { data.types.forEach(t => { if (typeof t === 'string' && t && !(cur.tags || []).includes(t)) cur.tags = [...(cur.tags || []), t]; }); await saveCats(); }
     }
-    records = await dbAll(); renderAll(); toast(`${n}件を戻しました`);
+    records = await dbAll(); renderAll(); if (!$('#select').hidden) renderSelect(); toast(`${n}件を戻しました`);
   } catch { toast('Stashのバックアップファイルではないようです'); }
 });

@@ -18,7 +18,7 @@ function renderSelect(){
       <span class="label">${esc(c.name)}</span>
       ${c.sub ? `<span class="sub">${esc(c.sub)}</span>` : ''}
     </button>`).join('');
-  $('#selEdit').textContent = selEditing ? '完了' : '編集';
+  $('#selEdit').hidden = !selEditing; $('#selMenu').hidden = selEditing;
   $('#selTitle').textContent = selEditing ? 'タップで編集・◀▶で並べ替え' : 'ジャンルを選ぶ';
   $('#selTitle').className = selEditing ? 'hint-on' : 'vh';
 }
@@ -67,7 +67,6 @@ function renderBgDraft(){
   bgFilter(prev, d);
   const v = prev.querySelector('video'); if (v) v.play().catch(() => {});
 }
-$('#selBgBtn').addEventListener('click', openBgSheet);
 $('#bgMode').addEventListener('click', e => { const b = e.target.closest('[data-bgm]'); if (!b) return; bgDraft.mode = b.dataset.bgm; renderBgDraft(); });
 $('#bgThumbs').addEventListener('click', e => { const b = e.target.closest('[data-bgdel]'); if (!b) return; bgDraft.photos.splice(Number(b.dataset.bgdel), 1); renderBgDraft(); });
 const bgAddPhotos = async files => {
@@ -107,8 +106,22 @@ function goHome(){
   selEditing = false; $('#select').classList.remove('going');
   $('#select').hidden = false; renderSelect(); renderSelBg();
 }
-$('#selEdit').addEventListener('click', () => { selEditing = !selEditing; renderSelect(); });
-$('#selAdd').addEventListener('click', () => openCatSheet(null));
+$('#selEdit').addEventListener('click', () => { selEditing = false; renderSelect(); });
+/* ホームの歯車: 編集・追加・背景・機種変更の準備 */
+$('#selMenu').addEventListener('click', () => actionSheet('', [
+  {label:'ジャンルを編集・並べ替え', fn:() => { selEditing = true; renderSelect(); }},
+  {label:'ジャンルを追加', fn:() => openCatSheet(null)},
+  {label:'背景を変える', fn:openBgSheet},
+  {label:'機種変更の準備', fn:openMoveSheet},
+]));
+function openMoveSheet(){
+  const last = Number(lsGet('gm-backup')) || 0;
+  $('#moveLast').textContent = last ? `前回保存した日：${fmtDate(ymd(new Date(last)))}` : 'まだ一度も保存していません';
+  show($('#moveSheet'));
+}
+$('#moveSave').addEventListener('click', async () => { await doExport(false); openMoveSheet(); });
+$('#moveSaveVid').addEventListener('click', async () => { await doExport(true); openMoveSheet(); });
+$('#moveLoad').addEventListener('click', () => $('#importFile').click());
 $('#catGrid').addEventListener('click', async e => {
   if (e.target.closest('[data-addcat]')) { openCatSheet(null); return; }
   const tile = e.target.closest('[data-cid]'); if (!tile) return;

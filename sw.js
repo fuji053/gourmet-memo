@@ -1,5 +1,5 @@
 // Stash — offline support. Bump VERSION when files change so phones pick up the update.
-const VERSION = 'gurumemo-v22';
+const VERSION = 'gurumemo-v23';
 const FONTS = VERSION + '-fonts';
 const SHELL = [
   './', './index.html', './manifest.webmanifest',
